@@ -18,4 +18,5 @@
 1. Copy libraries to Arduino/
 1. Open .ino in Arduino IDE
 1. Compile and upload
-1. Power on and connect to WiFi
+1. Power on and connect to WiFi using the AP "MehClock-xxxxx" and password "ToTheMoon1"
+1. Menu > Configure new AP > Then set up the AP.
