@@ -73,7 +73,6 @@ XT_DAC_Audio_Class DacAudio(25,0);    // Create the main player class object.
 uint32_t DemoCounter=0;
 
 int32_t lastBlockHeight = 0;
-int32_t lastBitcoinPrice = 0;
 int32_t i = 0;
 
 String getEndpointData(const char* host, String endpointUrl);
@@ -155,6 +154,7 @@ void displayBlockHeight() {
     }
 
   ld.clear();
+  ld.write(8, B1111111); // square
   ld.printDigit(blockHeight);
   // ld.write(8, B00011101);
   // ld.write(7, B00001001);
@@ -176,12 +176,13 @@ void displayBitcoinPrice() {
   Serial.println("bitcoinPrice is");
   Serial.println(bitcoinPrice);
 
-  if(bitcoinPrice != lastBitcoinPrice) {
-      lastBitcoinPrice = bitcoinPrice;
-    }
-
   ld.clear();
+  // print from first LED 
   ld.printDigit(bitcoinPrice);
+  // ld.printDigit(bitcoinPrice, 3);
+  // ld.write(3, B0111110); // U
+  // ld.write(2, B1011011); // S
+  // ld.write(1, B0111101); // d
 }
 
 
@@ -422,7 +423,7 @@ void loop() {
   //   delay(2000);
   // // }
   displayBitcoinPrice();
-  delay(30000);
-  displayBlockHeight();
+  // delay(30000);
+  // displayBlockHeight();
   delay(30000);
 }// loop ends
