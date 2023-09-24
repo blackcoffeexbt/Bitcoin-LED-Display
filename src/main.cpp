@@ -98,7 +98,7 @@ void displayMempoolFees() {
   ld.write(7, B1001111); // e
   ld.write(6, B1001111); // e
   ld.write(5, B1011011); // s
-  delay(1000 );
+  delay(1000);
   animateClear();
 
   uint16_t fee;
@@ -116,6 +116,7 @@ void displayMempoolFees() {
   // economy
   fee = doc["economyFee"];
   // economy
+  animateClear();
   ld.clear();
   ld.write(8, B01001111);
   ld.write(7, B01001110);
@@ -126,6 +127,7 @@ void displayMempoolFees() {
   // hour
   fee = doc["hourFee"];
   // hour
+  animateClear();
   ld.clear();
   ld.write(8, B00010111);
   ld.write(7, B01111110);
@@ -137,6 +139,7 @@ void displayMempoolFees() {
   // fast
   fee = doc["fastestFee"];
   // fast
+  animateClear();
   ld.clear();
   ld.write(8, B01000111);
   ld.write(7, B01110111);
@@ -167,30 +170,31 @@ void displayBlockHeight() {
 
   animateClear();
 
-  if(blockHeight != lastBlockHeight) {
-      lastBlockHeight = blockHeight;
-      playAudioChing();
-      delay(1000);
-      writeTickTock();
-    }
+  // if(blockHeight != lastBlockHeight) {
+  //     lastBlockHeight = blockHeight;
+  //     playAudioChing();
+  //     delay(1000);
+  //     writeTickTock();
+  //   }
 
-  ld.clear();
-  ld.write(8, B1111111); // square
+  // ld.write(8, B1111110); // square
   ld.printDigit(blockHeight);
   // ld.write(8, B00011101);
   // ld.write(7, B00001001);
 }
 
 void animateClear() {
+  uint16_t animDelay = 50;
   // for segment 8 to 1
   for(uint8_t i = 8; i >= 1; i--) {
     if(i <= 8) {
       ld.write(i + 1, B00000000);
     }
     ld.write(i, B0001000);
-    delay(100);
+    delay(animDelay);
   }
   ld.clear();
+  delay(animDelay);
 }
 
 void displayBitcoinPrice() {
@@ -210,9 +214,9 @@ void displayBitcoinPrice() {
   Serial.println(bitcoinPrice);
 
   animateClear();
-  ld.write(8, B1111101); // b
+  ld.write(8, B0011111); // b
   ld.write(7, B0001111); // t
-  ld.write(6, B1001110); // c
+  ld.write(6, B0001101); // c
   ld.write(5, B0011100); // U
   ld.write(4, B1011011); // S
   ld.write(3, B0111101); // d
@@ -282,23 +286,27 @@ void playAudioChing() {
 }
 
 void writeTickTock() {
-  const uint16_t animDelay = 500;
+  const uint16_t animDelay = 250;
   ld.clear();
   
   ld.write(7, B00001111); // t
+  delay(50);
   ld.write(6, B00110000); // i
+  delay(50);
   ld.write(5, B01001110); // c
   delay(animDelay);
   
   ld.write(4, B00001111); // t
+  delay(50);
   ld.write(3, B01111110); // o
+  delay(50);
   ld.write(2, B01001110); // c
   delay(animDelay);
 
-  for(uint8_t i = 7; i >= 2; i--) {
-    ld.write(i, B10000000);
-  }
-  delay(animDelay); 
+  // for(uint8_t i = 7; i >= 2; i--) {
+  //   ld.write(i, B10000000);
+  // }
+  // delay(animDelay); 
 }
 
 
@@ -451,9 +459,10 @@ void setup() {
   /* Set the digit count */
   ld.setDigitLimit(8);
 
-  delay(500);
-  writeBitcoin();
-  delay(3000);
+  // writeBitcoin();
+  animateClear();
+  writeTickTock();
+  delay(2000);
 }
 
 void loop() {
