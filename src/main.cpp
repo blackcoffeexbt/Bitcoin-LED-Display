@@ -62,7 +62,7 @@ AutoConnectAux saveAux;
 
 String apPassword = "ToTheMoon1"; //default WiFi AP password
 
-const bool isFeesDisplayEnabled = false;
+const bool isFeesDisplayEnabled = true;
 
 int32_t blockHeight = 0;
 int32_t bitcoinPrice = 0;
@@ -79,6 +79,7 @@ String getEndpointData(const char* host, String endpointUrl);
 void playAudioChing();
 void writeTickTock();
 void configureAccessPoint();
+void animateClear();
 
 void displayMempoolFees() {
   uint16_t pagingDelay = 2000;
@@ -91,6 +92,15 @@ void displayMempoolFees() {
     Serial.print("deserializeJson() failed: ");
     Serial.println(error.f_str());
   }
+
+  animateClear();
+  ld.write(8, B1000111); // f
+  ld.write(7, B1001111); // e
+  ld.write(6, B1001111); // e
+  ld.write(5, B1011011); // s
+  delay(1000 );
+  animateClear();
+
   uint16_t fee;
   // none
   fee = doc["minimumFee"];
@@ -146,6 +156,17 @@ void displayBlockHeight() {
   blockHeight = line.toInt();
   // blockHeight = 696969;
 
+  animateClear();
+  ld.write(8, B0110111); // h
+  ld.write(7, B1001111); // e
+  ld.write(6, B0000110); // i
+  ld.write(5, B1011110); // g
+  ld.write(4, B0110111); // h
+  ld.write(3, B0001111); // t
+  delay(1000);
+
+  animateClear();
+
   if(blockHeight != lastBlockHeight) {
       lastBlockHeight = blockHeight;
       playAudioChing();
@@ -158,6 +179,18 @@ void displayBlockHeight() {
   ld.printDigit(blockHeight);
   // ld.write(8, B00011101);
   // ld.write(7, B00001001);
+}
+
+void animateClear() {
+  // for segment 8 to 1
+  for(uint8_t i = 8; i >= 1; i--) {
+    if(i <= 8) {
+      ld.write(i + 1, B00000000);
+    }
+    ld.write(i, B0001000);
+    delay(100);
+  }
+  ld.clear();
 }
 
 void displayBitcoinPrice() {
@@ -176,13 +209,19 @@ void displayBitcoinPrice() {
   Serial.println("bitcoinPrice is");
   Serial.println(bitcoinPrice);
 
+  animateClear();
+  ld.write(8, B1111101); // b
+  ld.write(7, B0001111); // t
+  ld.write(6, B1001110); // c
+  ld.write(5, B0011100); // U
+  ld.write(4, B1011011); // S
+  ld.write(3, B0111101); // d
+  delay(1000);
+
+  animateClear();
   ld.clear();
   // print from first LED 
   ld.printDigit(bitcoinPrice);
-  // ld.printDigit(bitcoinPrice, 3);
-  // ld.write(3, B0111110); // U
-  // ld.write(2, B1011011); // S
-  // ld.write(1, B0111101); // d
 }
 
 
@@ -418,12 +457,12 @@ void setup() {
 }
 
 void loop() {
-  // if(isFeesDisplayEnabled) {
-  //   displayMempoolFees();
-  //   delay(2000);
-  // // }
+  if(isFeesDisplayEnabled) {
+    displayMempoolFees();
+    delay(2000);
+  }
   displayBitcoinPrice();
-  // delay(30000);
-  // displayBlockHeight();
+  delay(30000);
+  displayBlockHeight();
   delay(30000);
 }// loop ends
