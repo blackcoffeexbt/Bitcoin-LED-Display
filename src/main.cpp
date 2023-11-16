@@ -106,10 +106,10 @@ void displayMempoolFees() {
   fee = doc["minimumFee"];
   // none
   ld.clear();
-  ld.write(8, B01110110);
-  ld.write(7, B01111110);
-  ld.write(6, B01110110);
-  ld.write(5, B01001111);
+  ld.write(8, B1110110); // N
+  ld.write(7, B1111110); // O
+  ld.write(6, B1110110); // N
+  ld.write(5, B01001111); // E
   ld.printDigit(fee);
   delay(pagingDelay);
 
@@ -118,9 +118,9 @@ void displayMempoolFees() {
   // economy
   animateClear();
   ld.clear();
-  ld.write(8, B01001111);
-  ld.write(7, B01001110);
-  ld.write(6, B01111110);
+  ld.write(8, B01001111); // E
+  ld.write(7, B0001101); // c
+  ld.write(6, B0011101); // o
   ld.printDigit(fee);
   delay(pagingDelay);
 
@@ -129,10 +129,10 @@ void displayMempoolFees() {
   // hour
   animateClear();
   ld.clear();
-  ld.write(8, B00010111);
-  ld.write(7, B01111110);
-  ld.write(6, B00111110);
-  ld.write(5, B00000101);
+  ld.write(8, B0110111);  // H
+  ld.write(7, B0011101); // o
+  ld.write(6, B0011100); // u
+  ld.write(5, B00000101); // r
   ld.printDigit(fee);
   delay(pagingDelay);
 
@@ -141,10 +141,10 @@ void displayMempoolFees() {
   // fast
   animateClear();
   ld.clear();
-  ld.write(8, B01000111);
-  ld.write(7, B01110111);
-  ld.write(6, B01011011);
-  ld.write(5, B00001111);
+  ld.write(8, B01000111); // F
+  ld.write(7, B01110111); // A
+  ld.write(6, B01011011); // S
+  ld.write(5, B00001111); // t
   ld.printDigit(fee);
   
 }
@@ -160,11 +160,11 @@ void displayBlockHeight() {
   // blockHeight = 696969;
 
   animateClear();
-  ld.write(8, B0110111); // h
-  ld.write(7, B1001111); // e
-  ld.write(6, B0000110); // i
-  ld.write(5, B1011110); // g
-  ld.write(4, B0110111); // h
+  ld.write(8, B0110111); // H
+  ld.write(7, B1001111); // E
+  ld.write(6, B0000110); // I
+  ld.write(5, B1011110); // G
+  ld.write(4, B0110111); // H
   ld.write(3, B0001111); // t
   delay(1000);
 
@@ -262,6 +262,19 @@ String getEndpointData(const char* host, String endpointUrl) {
 
   const String line = client.readString();
   return line;
+}
+
+void scrollWord(String word) {
+  uint16_t animDelay = 50;
+  for(uint8_t i = 8; i >= 1; i--) {
+    if(i <= 8) {
+      ld.write(i + 1, B00000000);
+    }
+    ld.write(i, B0001000);
+    delay(animDelay);
+  }
+  ld.clear();
+  delay(animDelay);
 }
 
 void writeBitcoin() {
@@ -471,7 +484,12 @@ void loop() {
     delay(2000);
   }
   displayBitcoinPrice();
-  delay(30000);
+  delay(20000);
+
+  if(isFeesDisplayEnabled) {
+    displayMempoolFees();
+    delay(2000);
+  }
   displayBlockHeight();
-  delay(30000);
+  delay(20000);
 }// loop ends
