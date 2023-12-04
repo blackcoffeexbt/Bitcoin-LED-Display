@@ -42,17 +42,20 @@ or make donation using PayPal http://robojax.com/L/?id=64
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include "DigitLedDisplay.h"
-#include "ching.h"
-#include "XT_DAC_Audio.h"
 
 /* Arduino Pin to Display Pin
    7 to DIN,
    6 to CS,
    5 to CLK */
-#define DIN 5
-#define CS 17
-#define CLK 16   
+#define DIN 2
+#define CS 5
+#define CLK 4 
 DigitLedDisplay ld = DigitLedDisplay(DIN, CS, CLK);
+
+#define BUZZER_PIN 21 // Buzzer pin
+#define CLICK_DURATION 20 // Click duration in ms
+
+#define TACTILE_SWITCH_PIN 10 // Tactile switch pin
 
 WebServer server;
 AutoConnect portal(server);
@@ -67,16 +70,12 @@ const bool isFeesDisplayEnabled = true;
 int32_t blockHeight = 0;
 int32_t bitcoinPrice = 0;
 
-XT_Wav_Class ChingWav(ching_wav);     // create an object of type XT_Wav_Class that is used by 
-XT_DAC_Audio_Class DacAudio(25,0);    // Create the main player class object. 
-
 uint32_t DemoCounter=0;
 
 int32_t lastBlockHeight = 0;
 int32_t i = 0;
 
 String getEndpointData(const char* host, String endpointUrl);
-void playAudioChing();
 void writeTickTock();
 void configureAccessPoint();
 void animateClear();
@@ -169,13 +168,6 @@ void displayBlockHeight() {
   delay(1000);
 
   animateClear();
-
-  // if(blockHeight != lastBlockHeight) {
-  //     lastBlockHeight = blockHeight;
-  //     playAudioChing();
-  //     delay(1000);
-  //     writeTickTock();
-  //   }
 
   // ld.write(8, B1111110); // square
   ld.printDigit(blockHeight);
@@ -285,17 +277,6 @@ void writeBitcoin() {
   ld.write(3, B01111110); // o
   ld.write(2, B00110000); // i
   ld.write(1, B01110110); // n
-}
-
-void playAudioChing() {
-  Serial.println("Ching");
-  
-  DacAudio.FillBuffer(); 
-  DacAudio.Play(&ChingWav);
-
-  while(ChingWav.Playing) {
-    DacAudio.FillBuffer();                // Fill the sound buffer with data  
-  }
 }
 
 void writeTickTock() {
@@ -440,13 +421,13 @@ void configureAccessPoint() {
   //  config.beginTimeout = 10000UL;
 
   config.immediateStart = false;
-  config.hostName = "Mehclock";
-  config.apid = "Mehclock-" + String((uint32_t)ESP.getEfuseMac(), HEX);
+  config.hostName = "BitkoClock";
+  config.apid = "BitkoClock-" + String((uint32_t)ESP.getEfuseMac(), HEX);
   config.apip = IPAddress(6, 15, 6, 15);      // Sets SoftAP IP address
   config.gateway = IPAddress(6, 15, 6, 15);     // Sets WLAN router IP address
   config.psk = apPassword;
   config.menuItems = AC_MENUITEM_CONFIGNEW | AC_MENUITEM_OPENSSIDS | AC_MENUITEM_RESET;
-  config.title = "Mehclock";
+  config.title = "BitkoClock";
   config.portalTimeout = 120000;
 
   portal.join({elementsAux, saveAux});
@@ -458,38 +439,61 @@ void configureAccessPoint() {
   }
 }
 
+void click(int period)
+{
+  Serial.println("NEW BLOCK Click!");
+  for (int i = 0; i < CLICK_DURATION; i++)
+  {
+    digitalWrite(BUZZER_PIN, HIGH);
+    delayMicroseconds(period); // Half period of 1000Hz tone.
+    digitalWrite(BUZZER_PIN, LOW);
+    delayMicroseconds(period); // Other half period of 1000Hz tone.
+  }
+}
+
 void setup() {
   Serial.begin(115200);
-  Serial.println();
+  Serial.println("Booted up");
 
-  DacAudio.DacVolume=10;
-  
-  initWiFi();
-  
-  /* Set the brightness min:1, max:15 */
+    /* Set the brightness min:1, max:15 */
   ld.setBright(1);
 
   /* Set the digit count */
   ld.setDigitLimit(8);
+  
+  initWiFi();
 
-  // writeBitcoin();
+  delay(1000);
+
+  animateClear();
+  writeBitcoin();
   animateClear();
   writeTickTock();
+
+  pinMode(BUZZER_PIN, OUTPUT); // Set the buzzer pin as an output.
+  // click on boot
+  click(225);
+  // read state of tactile switch
+  pinMode(TACTILE_SWITCH_PIN, INPUT_PULLUP);
+  Serial.println("Tactile switch state");
+  Serial.println(digitalRead(TACTILE_SWITCH_PIN));
+
   delay(2000);
 }
 
 void loop() {
-  if(isFeesDisplayEnabled) {
-    displayMempoolFees();
-    delay(2000);
-  }
-  displayBitcoinPrice();
-  delay(20000);
+  
+  // if(isFeesDisplayEnabled) {
+  //   displayMempoolFees();
+  //   delay(2000);
+  // }
+  // displayBitcoinPrice();
+  // delay(20000);
 
-  if(isFeesDisplayEnabled) {
-    displayMempoolFees();
-    delay(2000);
-  }
-  displayBlockHeight();
-  delay(20000);
+  // if(isFeesDisplayEnabled) {
+  //   displayMempoolFees();
+  //   delay(2000);
+  // }
+  // displayBlockHeight();
+  // delay(20000);
 }// loop ends
