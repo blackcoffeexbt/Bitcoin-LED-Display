@@ -83,7 +83,7 @@ void animateClear();
 
 void displayMempoolFees() {
   uint16_t pagingDelay = 2000;
-  StaticJsonDocument<3000> doc;
+  StaticJsonDocument<400> doc;
   const String line = getEndpointData("mempool.space", "/api/v1/fees/recommended");
 
   DeserializationError error = deserializeJson(doc, line);
@@ -492,13 +492,13 @@ void setup() {
 
 void loop() {
   // print "loop" eacjh second
-  Serial.println("loop");
-  delay(1000);
+  // Serial.println("loop");
+  // delay(1000);
   
-  // if(isFeesDisplayEnabled) {
-  //   displayMempoolFees();
-  //   delay(2000);
-  // }
+  if(isFeesDisplayEnabled) {
+    displayMempoolFees();
+    delay(2000);
+  }
   // displayBitcoinPrice();
   // delay(20000);
 
