@@ -83,97 +83,97 @@ void animateClear();
 
 void displayMempoolFees() {
   uint16_t pagingDelay = 2000;
-  StaticJsonDocument<400> doc;
-  const String line = getEndpointData("mempool.space", "/api/v1/fees/recommended");
+  DynamicJsonDocument doc(200);
+  String line = getEndpointData("mempool.space", "/api/v1/fees/recommended");
 
-  DeserializationError error = deserializeJson(doc, line);
-  if (error)
-  {
-    Serial.print("deserializeJson() failed: ");
-    Serial.println(error.f_str());
-  }
+  // DeserializationError error = deserializeJson(doc, line);
+  // if (error)
+  // {
+  //   Serial.print("deserializeJson() failed: ");
+  //   Serial.println(error.f_str());
+  // }
 
-  animateClear();
-  ld.write(8, B1000111); // f
-  ld.write(7, B1001111); // e
-  ld.write(6, B1001111); // e
-  ld.write(5, B1011011); // s
-  delay(1000);
-  animateClear();
+//   animateClear();
+//   ld.write(8, B1000111); // f
+//   ld.write(7, B1001111); // e
+//   ld.write(6, B1001111); // e
+//   ld.write(5, B1011011); // s
+//   delay(1000);
+//   animateClear();
 
-  uint16_t fee;
-  // none
-  fee = doc["minimumFee"];
-  // none
-  ld.clear();
-  ld.write(8, B1110110); // N
-  ld.write(7, B1111110); // O
-  ld.write(6, B1110110); // N
-  ld.write(5, B01001111); // E
-  ld.printDigit(fee);
-  delay(pagingDelay);
+//   uint16_t fee;
+//   // none
+//   fee = doc["minimumFee"];
+//   // none
+//   ld.clear();
+//   ld.write(8, B1110110); // N
+//   ld.write(7, B1111110); // O
+//   ld.write(6, B1110110); // N
+//   ld.write(5, B01001111); // E
+//   ld.printDigit(fee);
+//   delay(pagingDelay);
 
-  // economy
-  fee = doc["economyFee"];
-  // economy
-  animateClear();
-  ld.clear();
-  ld.write(8, B01001111); // E
-  ld.write(7, B0001101); // c
-  ld.write(6, B0011101); // o
-  ld.printDigit(fee);
-  delay(pagingDelay);
+//   // economy
+//   fee = doc["economyFee"];
+//   // economy
+//   animateClear();
+//   ld.clear();
+//   ld.write(8, B01001111); // E
+//   ld.write(7, B0001101); // c
+//   ld.write(6, B0011101); // o
+//   ld.printDigit(fee);
+//   delay(pagingDelay);
 
-  // hour
-  fee = doc["hourFee"];
-  // hour
-  animateClear();
-  ld.clear();
-  ld.write(8, B0110111);  // H
-  ld.write(7, B0011101); // o
-  ld.write(6, B0011100); // u
-  ld.write(5, B00000101); // r
-  ld.printDigit(fee);
-  delay(pagingDelay);
+//   // hour
+//   fee = doc["hourFee"];
+//   // hour
+//   animateClear();
+//   ld.clear();
+//   ld.write(8, B0110111);  // H
+//   ld.write(7, B0011101); // o
+//   ld.write(6, B0011100); // u
+//   ld.write(5, B00000101); // r
+//   ld.printDigit(fee);
+//   delay(pagingDelay);
 
-  // fast
-  fee = doc["fastestFee"];
-  // fast
-  animateClear();
-  ld.clear();
-  ld.write(8, B01000111); // F
-  ld.write(7, B01110111); // A
-  ld.write(6, B01011011); // S
-  ld.write(5, B00001111); // t
-  ld.printDigit(fee);
+//   // fast
+//   fee = doc["fastestFee"];
+//   // fast
+//   animateClear();
+//   ld.clear();
+//   ld.write(8, B01000111); // F
+//   ld.write(7, B01110111); // A
+//   ld.write(6, B01011011); // S
+//   ld.write(5, B00001111); // t
+//   ld.printDigit(fee);
   
-}
+// }
 
-void displayBlockHeight() {
-  // Get block height
-  const String line = getEndpointData("mempool.space", "/api/blocks/tip/height");
-  // const String line = getEndpointData("/bh");
-  Serial.println("Block height");
-  Serial.println(line);
+// void displayBlockHeight() {
+//   // Get block height
+//   const String line = getEndpointData("mempool.space", "/api/blocks/tip/height");
+//   // const String line = getEndpointData("/bh");
+//   Serial.println("Block height");
+//   Serial.println(line);
 
-  blockHeight = line.toInt();
-  // blockHeight = 696969;
+//   blockHeight = line.toInt();
+//   // blockHeight = 696969;
 
-  animateClear();
-  ld.write(8, B0110111); // H
-  ld.write(7, B1001111); // E
-  ld.write(6, B0000110); // I
-  ld.write(5, B1011110); // G
-  ld.write(4, B0110111); // H
-  ld.write(3, B0001111); // t
-  delay(1000);
+//   animateClear();
+//   ld.write(8, B0110111); // H
+//   ld.write(7, B1001111); // E
+//   ld.write(6, B0000110); // I
+//   ld.write(5, B1011110); // G
+//   ld.write(4, B0110111); // H
+//   ld.write(3, B0001111); // t
+//   delay(1000);
 
-  animateClear();
+//   animateClear();
 
-  // ld.write(8, B1111110); // square
-  ld.printDigit(blockHeight);
-  // ld.write(8, B00011101);
-  // ld.write(7, B00001001);
+//   // ld.write(8, B1111110); // square
+//   ld.printDigit(blockHeight);
+//   // ld.write(8, B00011101);
+//   // ld.write(7, B00001001);
 }
 
 void animateClear() {
@@ -230,7 +230,7 @@ void displayBitcoinPrice() {
  */
 String getEndpointData(const char* host, String endpointUrl) {
   WiFiClientSecure client;
-  client.setInsecure(); //Some versions of WiFiClientSecure need this
+  // client.setInsecure(); //Some versions of WiFiClientSecure need this
 
   if (!client.connect(host, 443))
   {
@@ -254,6 +254,8 @@ String getEndpointData(const char* host, String endpointUrl) {
   }
 
   const String line = client.readString();
+  Serial.println("line is");
+  Serial.println(line);
   return line;
 }
 
@@ -508,4 +510,4 @@ void loop() {
   // }
   // displayBlockHeight();
   // delay(20000);
-}// loop ends
+}
