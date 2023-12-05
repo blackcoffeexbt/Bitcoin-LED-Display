@@ -37,6 +37,7 @@ or make donation using PayPal http://robojax.com/L/?id=64
     
 
  */
+#include <Arduino.h>
 #include <ArduinoJson.h>
 #include <AutoConnect.h>
 #include <WiFi.h>
@@ -52,7 +53,7 @@ or make donation using PayPal http://robojax.com/L/?id=64
 #define CLK 4 
 DigitLedDisplay ld = DigitLedDisplay(DIN, CS, CLK);
 
-#define BUZZER_PIN 21 // Buzzer pin
+#define BUZZER_PIN 20 // Buzzer pin
 #define CLICK_DURATION 20 // Click duration in ms
 
 #define TACTILE_SWITCH_PIN 10 // Tactile switch pin
@@ -452,6 +453,7 @@ void click(int period)
 }
 
 void setup() {
+  delay(5000);
   Serial.begin(115200);
   Serial.println("Booted up");
 
@@ -460,28 +462,38 @@ void setup() {
 
   /* Set the digit count */
   ld.setDigitLimit(8);
-  
-  initWiFi();
 
   delay(1000);
+
+  pinMode(BUZZER_PIN, OUTPUT); // Set the buzzer pin as an output.
+  // click on boot
+  click(225);
+  click(100);
+  click(10);
+  click(500);
+
 
   animateClear();
   writeBitcoin();
   animateClear();
   writeTickTock();
-
-  pinMode(BUZZER_PIN, OUTPUT); // Set the buzzer pin as an output.
-  // click on boot
-  click(225);
+  
   // read state of tactile switch
   pinMode(TACTILE_SWITCH_PIN, INPUT_PULLUP);
   Serial.println("Tactile switch state");
   Serial.println(digitalRead(TACTILE_SWITCH_PIN));
 
+  Serial.println("initing wifi");
+  initWiFi();
+  Serial.println("wifi connected");
+
   delay(2000);
 }
 
 void loop() {
+  // print "loop" eacjh second
+  Serial.println("loop");
+  delay(1000);
   
   // if(isFeesDisplayEnabled) {
   //   displayMempoolFees();
