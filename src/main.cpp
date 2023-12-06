@@ -1,47 +1,8 @@
-/* 
- *  8 Digits LED Seven Segment Display Module based on MAX7219 using Arduino IDE
- *  
- *  updated by Ahmad Shamshiri for Robojax 
- *  On Monday Sep 16, 2019 in Ajax, Ontario, Canada
- *  You can get this code from Robojax.com
- *  
- *  Original Libary source: https://github.com/ozhantr/DigitLedDisplay
- *  
- *  Watch video instruction for this video: https://youtu.be/R5ste5UHmQk
- *  At the moments, it doesn't display decimal points. It needs a little work to make it work
-
-You can get the wiring diagram from my Arduino Course at Udemy.com
-Learn Arduino step by step with all library, codes, wiring diagram all in one place
-visit my course now http://robojax.com/L/?id=62
-
-If you found this tutorial helpful, please support me so I can continue creating 
-content like this. You can support me on Patreon http://robojax.com/L/?id=63
-or make donation using PayPal http://robojax.com/L/?id=64
-
- * Code is available at http://robojax.com/learn/arduino
-
- * This code is "AS IS" without warranty or liability. Free to be used as long as you keep this note intact.* 
- * This code has been download from Robojax.com
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>. 
-    
-
- */
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include <AutoConnect.h>
 #include <WiFi.h>
-#include <WiFiClientSecure.h>
+#include <HTTPClient.h>
+#include <WiFiManager.h>
 #include "DigitLedDisplay.h"
 
 /* Arduino Pin to Display Pin
@@ -58,14 +19,6 @@ DigitLedDisplay ld = DigitLedDisplay(DIN, CS, CLK);
 
 #define TACTILE_SWITCH_PIN 10 // Tactile switch pin
 
-WebServer server;
-AutoConnect portal(server);
-AutoConnectConfig config;
-AutoConnectAux elementsAux;
-AutoConnectAux saveAux;
-
-String apPassword = "ToTheMoon1"; //default WiFi AP password
-
 const bool isFeesDisplayEnabled = true;
 
 int32_t blockHeight = 0;
@@ -76,7 +29,7 @@ uint32_t DemoCounter=0;
 int32_t lastBlockHeight = 0;
 int32_t i = 0;
 
-String getEndpointData(const char* host, String endpointUrl);
+String getEndpointData(String url);
 void writeTickTock();
 void configureAccessPoint();
 void animateClear();
@@ -84,96 +37,96 @@ void animateClear();
 void displayMempoolFees() {
   uint16_t pagingDelay = 2000;
   DynamicJsonDocument doc(200);
-  String line = getEndpointData("mempool.space", "/api/v1/fees/recommended");
+  String line = getEndpointData("https://mempool.space/api/v1/fees/recommended");
 
-  // DeserializationError error = deserializeJson(doc, line);
-  // if (error)
-  // {
-  //   Serial.print("deserializeJson() failed: ");
-  //   Serial.println(error.f_str());
-  // }
+  DeserializationError error = deserializeJson(doc, line);
+  if (error)
+  {
+    Serial.print("deserializeJson() failed: ");
+    Serial.println(error.f_str());
+  }
 
-//   animateClear();
-//   ld.write(8, B1000111); // f
-//   ld.write(7, B1001111); // e
-//   ld.write(6, B1001111); // e
-//   ld.write(5, B1011011); // s
-//   delay(1000);
-//   animateClear();
+  animateClear();
+  ld.write(8, B1000111); // f
+  ld.write(7, B1001111); // e
+  ld.write(6, B1001111); // e
+  ld.write(5, B1011011); // s
+  delay(1000);
+  animateClear();
 
-//   uint16_t fee;
-//   // none
-//   fee = doc["minimumFee"];
-//   // none
-//   ld.clear();
-//   ld.write(8, B1110110); // N
-//   ld.write(7, B1111110); // O
-//   ld.write(6, B1110110); // N
-//   ld.write(5, B01001111); // E
-//   ld.printDigit(fee);
-//   delay(pagingDelay);
+  uint16_t fee;
+  // none
+  fee = doc["minimumFee"];
+  // none
+  ld.clear();
+  ld.write(8, B1110110); // N
+  ld.write(7, B1111110); // O
+  ld.write(6, B1110110); // N
+  ld.write(5, B01001111); // E
+  ld.printDigit(fee);
+  delay(pagingDelay);
 
-//   // economy
-//   fee = doc["economyFee"];
-//   // economy
-//   animateClear();
-//   ld.clear();
-//   ld.write(8, B01001111); // E
-//   ld.write(7, B0001101); // c
-//   ld.write(6, B0011101); // o
-//   ld.printDigit(fee);
-//   delay(pagingDelay);
+  // economy
+  fee = doc["economyFee"];
+  // economy
+  animateClear();
+  ld.clear();
+  ld.write(8, B01001111); // E
+  ld.write(7, B0001101); // c
+  ld.write(6, B0011101); // o
+  ld.printDigit(fee);
+  delay(pagingDelay);
 
-//   // hour
-//   fee = doc["hourFee"];
-//   // hour
-//   animateClear();
-//   ld.clear();
-//   ld.write(8, B0110111);  // H
-//   ld.write(7, B0011101); // o
-//   ld.write(6, B0011100); // u
-//   ld.write(5, B00000101); // r
-//   ld.printDigit(fee);
-//   delay(pagingDelay);
+  // hour
+  fee = doc["hourFee"];
+  // hour
+  animateClear();
+  ld.clear();
+  ld.write(8, B0110111);  // H
+  ld.write(7, B0011101); // o
+  ld.write(6, B0011100); // u
+  ld.write(5, B00000101); // r
+  ld.printDigit(fee);
+  delay(pagingDelay);
 
-//   // fast
-//   fee = doc["fastestFee"];
-//   // fast
-//   animateClear();
-//   ld.clear();
-//   ld.write(8, B01000111); // F
-//   ld.write(7, B01110111); // A
-//   ld.write(6, B01011011); // S
-//   ld.write(5, B00001111); // t
-//   ld.printDigit(fee);
+  // fast
+  fee = doc["fastestFee"];
+  // fast
+  animateClear();
+  ld.clear();
+  ld.write(8, B01000111); // F
+  ld.write(7, B01110111); // A
+  ld.write(6, B01011011); // S
+  ld.write(5, B00001111); // t
+  ld.printDigit(fee);
   
-// }
+}
 
-// void displayBlockHeight() {
-//   // Get block height
-//   const String line = getEndpointData("mempool.space", "/api/blocks/tip/height");
-//   // const String line = getEndpointData("/bh");
-//   Serial.println("Block height");
-//   Serial.println(line);
+void displayBlockHeight() {
+  // Get block height
+  const String line = getEndpointData("https://mempool.space/api/blocks/tip/height");
+  // const String line = getEndpointData("/bh");
+  Serial.println("Block height");
+  Serial.println(line);
 
-//   blockHeight = line.toInt();
-//   // blockHeight = 696969;
+  blockHeight = line.toInt();
+  // blockHeight = 696969;
 
-//   animateClear();
-//   ld.write(8, B0110111); // H
-//   ld.write(7, B1001111); // E
-//   ld.write(6, B0000110); // I
-//   ld.write(5, B1011110); // G
-//   ld.write(4, B0110111); // H
-//   ld.write(3, B0001111); // t
-//   delay(1000);
+  animateClear();
+  ld.write(8, B0110111); // H
+  ld.write(7, B1001111); // E
+  ld.write(6, B0000110); // I
+  ld.write(5, B1011110); // G
+  ld.write(4, B0110111); // H
+  ld.write(3, B0001111); // t
+  delay(1000);
 
-//   animateClear();
+  animateClear();
 
-//   // ld.write(8, B1111110); // square
-//   ld.printDigit(blockHeight);
-//   // ld.write(8, B00011101);
-//   // ld.write(7, B00001001);
+  // ld.write(8, B1111110); // square
+  ld.printDigit(blockHeight);
+  // ld.write(8, B00011101);
+  // ld.write(7, B00001001);
 }
 
 void animateClear() {
@@ -192,7 +145,7 @@ void animateClear() {
 
 void displayBitcoinPrice() {
   // Get block height
-  const String line = getEndpointData("api.coinbase.com", "/v2/prices/BTC-USD/buy");
+  const String line = getEndpointData("https://api.coinbase.com/v2/prices/BTC-USD/buy");
   // data will look like this, get the amount value {"data":{"amount":"26602.105","base":"BTC","currency":"USD"}} using ArduinoJson
   DynamicJsonDocument doc(1024);
   deserializeJson(doc, line);
@@ -221,42 +174,37 @@ void displayBitcoinPrice() {
   ld.printDigit(bitcoinPrice);
 }
 
-
 /**
  * @brief GET data from an LNbits endpoint
  * 
  * @param endpointUrl 
  * @return String 
  */
-String getEndpointData(const char* host, String endpointUrl) {
-  WiFiClientSecure client;
-  // client.setInsecure(); //Some versions of WiFiClientSecure need this
+String getEndpointData(String url) {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.begin(url);
+    int httpCode = http.GET();
 
-  if (!client.connect(host, 443))
-  {
-    Serial.println("Server down");
-    delay(3000);
-  }
-
-  const String request = String("GET ") + endpointUrl + " HTTP/1.1\r\n" +
-               "Host: " + host + "\r\n" +
-               "User-Agent: BCLedDisplay\r\n" +
-               "Content-Type: application/json\r\n" +
-               "Connection: close\r\n\r\n";
-  client.print(request);
-  while (client.connected())
-  {
-    const String line = client.readStringUntil('\n');
-    if (line == "\r")
-    {
-      break;
+    if (httpCode > 0) {
+      String payload = http.getString();
+      return payload;
+    } else {
+      Serial.println("Error in HTTP request");
     }
+    http.end();
+  } else {
+    Serial.println("Not connected to WiFi");
   }
+  return "";
+}
 
-  const String line = client.readString();
-  Serial.println("line is");
-  Serial.println(line);
-  return line;
+void initWiFi() {
+  // WiFiManager for auto-connecting to Wi-Fi
+  WiFiManager wifiManager;
+  wifiManager.autoConnect("AutoConnectAP");
+
+  Serial.println("Connected to WiFi");
 }
 
 void scrollWord(String word) {
@@ -337,111 +285,6 @@ void showLoadingAnim() {
 }
 
 
-void demo() {
-  
- 
-
-  /* Prints data to the display */
-  ld.printDigit(12345678); 
-  delay(3000);
-  ld.clear();
-
-  ld.printDigit(22222222);
-  delay(500);
-  ld.clear();
-
-  ld.printDigit(44444444);
-  delay(500);
-  ld.clear();
-
-  for (int i = 0; i < 100; i++) {
-    ld.printDigit(i);
-
-    /* Start From Digit 4 */
-    ld.printDigit(i, 4);
-    delay(50);
-
-    
-  }
-
-  for (int i = 0; i <= 10; i++) {
-    /* Display off */
-    ld.off();
-    delay(150);
-
-    /* Display on */
-    ld.on();
-    delay(150);
-  }
-
-  /* Clear all display value */
-  ld.clear();
-  delay(500);
-
-  for (long i = 0; i < 100; i++) {
-    ld.printDigit(i);
-    delay(25);
-  }
-
-  for (int i = 0; i <= 20; i++) {
-    /* Select Digit 5 and write B01100011 */
-    ld.write(5, B01100011);
-    delay(200);
-
-    /* Select Digit 5 and write B00011101 */
-    ld.write(5, B00011101);
-    delay(200);
-  }
-
-  /* Clear all display value */
-  ld.clear();
-  delay(500);
-
-  ld.printDigit(2019, 3);
-  delay(4000);
-}
-
-void initWiFi() {
-  configureAccessPoint();
-    
-  WiFi.mode(WIFI_STA);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(3000);
-  }
-}
-
-
-void configureAccessPoint() {
-  // handle access point traffic
-  server.on("/", []() {
-    String content = "<h1>Bitcoin Block Height Display</h1>";
-    content += AUTOCONNECT_LINK(COG_24);
-    server.send(200, "text/html", content);
-  });
-
-  config.autoReconnect = true;
-  config.reconnectInterval = 1; // 30s
-  //  config.beginTimeout = 10000UL;
-
-  config.immediateStart = false;
-  config.hostName = "BitkoClock";
-  config.apid = "BitkoClock-" + String((uint32_t)ESP.getEfuseMac(), HEX);
-  config.apip = IPAddress(6, 15, 6, 15);      // Sets SoftAP IP address
-  config.gateway = IPAddress(6, 15, 6, 15);     // Sets WLAN router IP address
-  config.psk = apPassword;
-  config.menuItems = AC_MENUITEM_CONFIGNEW | AC_MENUITEM_OPENSSIDS | AC_MENUITEM_RESET;
-  config.title = "BitkoClock";
-  config.portalTimeout = 120000;
-
-  portal.join({elementsAux, saveAux});
-  portal.config(config);
-
-    // Establish a connection with an autoReconnect option.
-  if (portal.begin()) {
-    Serial.println("WiFi connected: " + WiFi.localIP().toString());
-  }
-}
-
 void click(int period)
 {
   Serial.println("NEW BLOCK Click!");
@@ -474,7 +317,6 @@ void setup() {
   click(10);
   click(500);
 
-
   animateClear();
   writeBitcoin();
   animateClear();
@@ -493,21 +335,18 @@ void setup() {
 }
 
 void loop() {
-  // print "loop" eacjh second
-  // Serial.println("loop");
-  // delay(1000);
   
   if(isFeesDisplayEnabled) {
     displayMempoolFees();
     delay(2000);
   }
-  // displayBitcoinPrice();
-  // delay(20000);
+  displayBitcoinPrice();
+  delay(20000);
 
-  // if(isFeesDisplayEnabled) {
-  //   displayMempoolFees();
-  //   delay(2000);
-  // }
-  // displayBlockHeight();
-  // delay(20000);
+  if(isFeesDisplayEnabled) {
+    displayMempoolFees();
+    delay(2000);
+  }
+  displayBlockHeight();
+  delay(20000);
 }
