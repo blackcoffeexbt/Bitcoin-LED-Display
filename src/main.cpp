@@ -441,6 +441,7 @@ void setup() {
 
 void loop() {
     coinbaseWebSocket.loop();
+    mempoolWebSocket.loop();
   
   // if(isFeesDisplayEnabled) {
   //   displayMempoolFees();
