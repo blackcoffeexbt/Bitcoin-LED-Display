@@ -1,9 +1,11 @@
 #include <Arduino.h>
+#include <WebSocketsClient.h>
 #include <ArduinoJson.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <WiFiManager.h>
 #include "DigitLedDisplay.h"
+
 
 /* Arduino Pin to Display Pin
    7 to DIN,
@@ -33,6 +35,49 @@ String getEndpointData(String url);
 void writeTickTock();
 void configureAccessPoint();
 void animateClear();
+
+WebSocketsClient webSocket;
+
+void handleIncomingMessage(char* message) {
+  DynamicJsonDocument doc(1024);
+  deserializeJson(doc, message);
+  
+  const char* type = doc["type"]; 
+  if (strcmp(type, "ticker") == 0) {
+    const char* price = doc["price"]; 
+    Serial.print("BTC-USD Price: ");
+
+    // write to display
+    bitcoinPrice = atoi(price);
+
+    ld.clear();
+    // print from first LED 
+    ld.printDigit(bitcoinPrice);
+  }
+}
+
+void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
+  switch (type) {
+    case WStype_DISCONNECTED:
+      Serial.printf("[WSc] Disconnected!\n");
+      break;
+    case WStype_CONNECTED:
+      {
+        Serial.printf("[WSc] Connected to url: %s\n", payload);
+        // Send message to subscribe to ticker
+        webSocket.sendTXT("{\"type\": \"subscribe\", \"product_ids\": [\"BTC-USD\"], \"channels\": [\"level2\", \"heartbeat\", {\"name\": \"ticker\", \"product_ids\": [\"BTC-USD\"]}]}");
+      }
+      break;
+    case WStype_TEXT:
+      Serial.printf("[WSc] get text: %s\n", payload);
+      // Handle the received message
+      handleIncomingMessage((char*)payload);
+      break;
+    case WStype_BIN:
+      Serial.printf("[WSc] get binary length: %u\n", length);
+      break;
+  }
+}
 
 void displayMempoolFees() {
   uint16_t pagingDelay = 2000;
@@ -313,9 +358,6 @@ void setup() {
   pinMode(BUZZER_PIN, OUTPUT); // Set the buzzer pin as an output.
   // click on boot
   click(225);
-  click(100);
-  click(10);
-  click(500);
 
   animateClear();
   writeBitcoin();
@@ -331,22 +373,28 @@ void setup() {
   initWiFi();
   Serial.println("wifi connected");
 
-  delay(2000);
+  // Setup WebSocket
+  webSocket.beginSSL("ws-feed.exchange.coinbase.com", 443, "/");
+  webSocket.onEvent(webSocketEvent);
+  webSocket.setReconnectInterval(5000);
+  webSocket.enableHeartbeat(15000, 3000, 2);
+  
 }
 
 void loop() {
+    webSocket.loop();
   
-  if(isFeesDisplayEnabled) {
-    displayMempoolFees();
-    delay(2000);
-  }
-  displayBitcoinPrice();
-  delay(20000);
+  // if(isFeesDisplayEnabled) {
+  //   displayMempoolFees();
+  //   delay(2000);
+  // }
+  // displayBitcoinPrice();
+  // delay(20000);
 
-  if(isFeesDisplayEnabled) {
-    displayMempoolFees();
-    delay(2000);
-  }
-  displayBlockHeight();
-  delay(20000);
+  // if(isFeesDisplayEnabled) {
+  //   displayMempoolFees();
+  //   delay(2000);
+  // }
+  // displayBlockHeight();
+  // delay(20000);
 }
