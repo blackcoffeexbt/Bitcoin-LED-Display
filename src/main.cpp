@@ -301,10 +301,21 @@ String getEndpointData(String url) {
   return "";
 }
 
+void configModeCallback (WiFiManager *myWiFiManager) {
+  Serial.println("Entered config mode");
+  Serial.println(WiFi.softAPIP());
+  Serial.println(myWiFiManager->getConfigPortalSSID());
+  writeText("Config");
+}
+
 void initWiFi() {
   // WiFiManager for auto-connecting to Wi-Fi
   WiFiManager wifiManager;
-  wifiManager.autoConnect("AutoConnectAP");
+  wifiManager.setAPCallback(configModeCallback);
+  // set timeout
+  wifiManager.setConnectRetries(5);
+  wifiManager.setConnectTimeout(10);
+  wifiManager.autoConnect("AutoConnectAP", "ToTheMoon1");
 
   Serial.println("Connected to WiFi");
 }
@@ -445,6 +456,7 @@ void setup() {
 }
 
 void loop() {
+    Serial.println("looping");
     coinbaseWebSocket.loop();
     mempoolWebSocket.loop();
   
