@@ -5,6 +5,7 @@
 #include <HTTPClient.h>
 #include <WiFiManager.h>
 #include "DigitLedDisplay.h"
+#include "display.h"
 
 
 /* Arduino Pin to Display Pin
@@ -96,7 +97,7 @@ void mempoolWebSocketEvent(WStype_t type, uint8_t *payload, size_t length)
       int height = doc["block"]["height"];
       ld.clear();
       printNumberCentreish(height);
-      delay(2000);
+      delay(3000);
     }
     break;
   case WStype_BIN:
@@ -335,18 +336,18 @@ void writeTickTock() {
   const uint16_t animDelay = 250;
   ld.clear();
   
-  ld.write(7, B00001111); // t
+  writeLetterAtPos(7, 'T');
   delay(50);
-  ld.write(6, B00110000); // i
+  writeLetterAtPos(6, 'i');
   delay(50);
-  ld.write(5, B01001110); // c
+  writeLetterAtPos(5, 'c');
   delay(animDelay);
   
-  ld.write(4, B00001111); // t
+  writeLetterAtPos(4, 't');
   delay(50);
-  ld.write(3, B01111110); // o
+  writeLetterAtPos(3, 'o');
   delay(50);
-  ld.write(2, B01001110); // c
+  writeLetterAtPos(2, 'c');
   delay(animDelay);
 
   // for(uint8_t i = 7; i >= 2; i--) {
@@ -416,7 +417,7 @@ void setup() {
   click(225);
 
   animateClear();
-  writeBitcoin();
+  // writeBitcoin();
   animateClear();
   writeTickTock();
   
@@ -426,8 +427,11 @@ void setup() {
   Serial.println(digitalRead(TACTILE_SWITCH_PIN));
 
   Serial.println("initing wifi");
+  writeText("Init");
   initWiFi();
-  Serial.println("wifi connected");
+  // say connected to internet in 8 chars
+  writeText("Lets go");
+  Serial.println("connected");
 
   // Setup coinbaseWebSocket
   coinbaseWebSocket.beginSSL("ws-feed.exchange.coinbase.com", 443, "/");
