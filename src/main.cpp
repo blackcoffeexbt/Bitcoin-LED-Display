@@ -108,7 +108,7 @@ int32_t minimumFee = 0;
 
 void parseFees(char *payload)
 {
-  StaticJsonDocument<1024> doc;
+  StaticJsonDocument<2000> doc;
   deserializeJson(doc, (char *)payload);
   // get fees with serial logging
   fastestFee = doc["fees"]["fastestFee"];
@@ -126,13 +126,17 @@ void parseFees(char *payload)
   if (displayData == DisplayData::MempoolFees)
   {
     ld.clear();
-    // display economy fee, hour fee, fastest fee on the same screen with the dp on the right of each number, numbered 0 = far right, 8 = far left
-    ld.write(8, B00000001); // .
+    // display economy fee, hour fee, fastest fee on the same screen with the dp on the right of each number, numbered 0 = far left, 7 = far right
+    // ld.write(0, B00000001); // .
     ld.printDigit(economyFee, 7);
-    ld.write(6, B00000001); // .
-    ld.printDigit(hourFee, 5);
-    ld.write(4, B00000001); // .
-    ld.printDigit(fastestFee, 3);
+    // determine start char based on number of digits of economyFee
+    // int digits = floor(log10(abs(economyFee))) + 1;
+    // //
+    
+    // // ld.write(6, B00000001); // .
+    // ld.printDigit(hourFee, 5);
+    // // ld.write(4, B00000001); // .
+    // ld.printDigit(fastestFee, 3);
 
     delay(3000);
   }
