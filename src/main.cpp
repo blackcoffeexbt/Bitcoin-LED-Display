@@ -87,17 +87,17 @@ void parseBlockHeight(char *payload)
   StaticJsonDocument<1024> doc;
   deserializeJson(doc, (char *)payload);
   // get height
-  int height = doc["block"]["height"];
+  lastBlockHeight = doc["block"]["height"];
   if (displayData == DisplayData::PriceAndHeight ||
       displayData == DisplayData::Price)
   {
     ld.clear();
-    printNumberCentreish(bitcoinPrice);
-    delay(3000);
+    printNumberCentreish(lastBlockHeight);
+
+    if(displayData == DisplayData::PriceAndHeight) {
+      delay(3000);
+    }
   }
-  ld.clear();
-  printNumberCentreish(height);
-  delay(3000);
 }
 
 int32_t fastestFee = 0;
@@ -199,7 +199,7 @@ void coinbaseWebSocketEvent(WStype_t type, uint8_t *payload, size_t length)
   }
   break;
   case WStype_TEXT:
-    Serial.printf("[WSc] get text: %s\n", payload);
+    // Serial.printf("[WSc] get text: %s\n", payload);
     // Handle the received message
     handleIncomingMessage((char *)payload);
     break;
@@ -277,32 +277,14 @@ void displayMempoolFees()
   ld.printDigit(fee);
 }
 
-void displayBlockHeight()
+void setBlockHeight()
 {
   // Get block height
   const String line = getEndpointData("https://mempool.space/api/blocks/tip/height");
   // const String line = getEndpointData("/bh");
-  Serial.println("Block height");
-  Serial.println(line);
+  
+  lastBlockHeight = line.toInt();
 
-  blockHeight = line.toInt();
-  // blockHeight = 696969;
-
-  animateClear();
-  ld.write(8, B0110111); // H
-  ld.write(7, B1001111); // E
-  ld.write(6, B0000110); // I
-  ld.write(5, B1011110); // G
-  ld.write(4, B0110111); // H
-  ld.write(3, B0001111); // t
-  delay(1000);
-
-  animateClear();
-
-  // ld.write(8, B1111110); // square
-  ld.printDigit(blockHeight);
-  // ld.write(8, B00011101);
-  // ld.write(7, B00001001);
 }
 
 void animateClear()
@@ -539,6 +521,8 @@ void setup()
   writeText("Lets go");
   Serial.println("wifi connected");
 
+  setBlockHeight();
+
   // Setup coinbaseWebSocket
   coinbaseWebSocket.beginSSL("ws-feed.exchange.coinbase.com", 443, "/");
   coinbaseWebSocket.onEvent(coinbaseWebSocketEvent);
@@ -570,13 +554,16 @@ void loop()
     switch (displayData)
     {
     case DisplayData::PriceAndHeight:
-      writeText("USD-Height");
+      writeText("USDHeight");
       break;
     case DisplayData::Price:
       writeText("Price");
       break;
     case DisplayData::BlockHeight:
       writeText("Height");
+      ld.clear();
+      delay(500);
+      printNumberCentreish(lastBlockHeight);
       break;
     case DisplayData::MempoolFees:
       writeText("Fees");
