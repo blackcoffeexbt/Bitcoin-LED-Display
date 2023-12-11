@@ -8,7 +8,7 @@
 #include "DigitLedDisplay.h"
 #include "display.h"
 
-const char* firmwareVersion = "1.0.6";  // Current firmware version
+const char* firmwareVersion = "1.0.7";  // Current firmware version
 const char* firmwareJsonUrl = "https://sx6.store/bitkoclock/firmware.json";
 
 /* Arduino Pin to Display Pin
@@ -531,6 +531,45 @@ void click(int period)
   }
 }
 
+void showCurrentDisplaySetting(DisplayData displayData) {
+  switch (displayData)
+    {
+    case DisplayData::PriceAndHeight:
+      Serial.println("PriceAndHeight");
+      writeTextCentered("USDHeight");
+      delay(1000);
+      // show height, then price ticker
+      printNumberCentreish(lastBlockHeight);
+      delay(1000);
+      printNumberCentreish(bitcoinPrice);
+      break;
+    case DisplayData::Price:
+      Serial.println("Price");
+      writeTextCentered("Price");
+      delay(1000);
+      printNumberCentreish(bitcoinPrice);
+      break;
+    case DisplayData::BlockHeight:
+      writeTextCentered("HEIGHT");
+      Serial.println("BlockHeight");
+      delay(1000);
+      printNumberCentreish(lastBlockHeight);
+      break;
+    case DisplayData::MempoolFees:
+      Serial.println("MempoolFees");
+      writeTextCentered("FEES");
+      delay(1000);
+      displayFees();
+      break;
+    default:
+      writeTextCentered("---");
+      delay(1000);
+      Serial.println("default");
+      Serial.println(i);
+      break;
+    }
+  }
+
 void setup()
 {
   delay(1000);
@@ -557,10 +596,9 @@ void setup()
   writeTextCentered("HAS NET");
   Serial.println("wifi connected");
 
-  delay(1000);
-
   checkForUpdates();
 
+  showCurrentDisplaySetting(displayData);
   setBlockHeight();
   getBitcoinPrice();
 
@@ -594,38 +632,25 @@ void loop()
     displayData = static_cast<DisplayData>(i);
     Serial.println(displayData);
     // show on the display what is being displayed
+    showCurrentDisplaySetting(displayData);
     switch (displayData)
     {
     case DisplayData::PriceAndHeight:
-      Serial.println("PriceAndHeight");
-      writeTextCentered("USDHeight");
-      delay(1000);
       // show height, then price ticker
       printNumberCentreish(lastBlockHeight);
       delay(1000);
       printNumberCentreish(bitcoinPrice);
       break;
     case DisplayData::Price:
-      Serial.println("Price");
-      writeTextCentered("Price");
-      delay(1000);
       printNumberCentreish(bitcoinPrice);
       break;
     case DisplayData::BlockHeight:
-      writeTextCentered("HEIGHT");
-      Serial.println("BlockHeight");
-      delay(1000);
       printNumberCentreish(lastBlockHeight);
       break;
     case DisplayData::MempoolFees:
-      Serial.println("MempoolFees");
-      writeTextCentered("FEES");
-      delay(1000);
       displayFees();
       break;
     default:
-      writeTextCentered("---");
-      delay(1000);
       Serial.println("default");
       Serial.println(i);
       break;
