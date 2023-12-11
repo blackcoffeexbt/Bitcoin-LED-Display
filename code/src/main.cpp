@@ -8,7 +8,7 @@
 #include "DigitLedDisplay.h"
 #include "display.h"
 
-const char* firmwareVersion = "1.0.7";  // Current firmware version
+const char* firmwareVersion = "1.0.9";  // Current firmware version
 const char* firmwareJsonUrl = "https://sx6.store/bitkoclock/firmware.json";
 
 /* Arduino Pin to Display Pin
@@ -531,7 +531,12 @@ void click(int period)
   }
 }
 
-void showCurrentDisplaySetting(DisplayData displayData) {
+/**
+ * @brief Display the current data name and then the data
+ * 
+ * @param displayData 
+ */
+void showCurrentData(DisplayData displayData) {
   switch (displayData)
     {
     case DisplayData::PriceAndHeight:
@@ -576,7 +581,7 @@ void setup()
   Serial.begin(115200);
   Serial.println("Boot");
 
-  ld.setBright(1);
+  ld.setBright(0);
   ld.setDigitLimit(8);
   writeTextCentered(String(firmwareVersion));
   click(225);
@@ -598,9 +603,9 @@ void setup()
 
   checkForUpdates();
 
-  showCurrentDisplaySetting(displayData);
   setBlockHeight();
   getBitcoinPrice();
+  showCurrentData(displayData);
 
   coinbaseWebSocket.beginSSL("ws-feed.exchange.coinbase.com", 443, "/");
   coinbaseWebSocket.onEvent(coinbaseWebSocketEvent);
@@ -621,8 +626,6 @@ void loop()
   // watch for button press, on each press, delay 300ms and set DisplayData to next enum value
   if (digitalRead(TACTILE_SWITCH_PIN) == LOW)
   {
-    Serial.println("Button pressed");
-    delay(300);
     i++;
 
     if (i > 3)
@@ -630,30 +633,6 @@ void loop()
       i = 0;
     }
     displayData = static_cast<DisplayData>(i);
-    Serial.println(displayData);
-    // show on the display what is being displayed
-    showCurrentDisplaySetting(displayData);
-    switch (displayData)
-    {
-    case DisplayData::PriceAndHeight:
-      // show height, then price ticker
-      printNumberCentreish(lastBlockHeight);
-      delay(1000);
-      printNumberCentreish(bitcoinPrice);
-      break;
-    case DisplayData::Price:
-      printNumberCentreish(bitcoinPrice);
-      break;
-    case DisplayData::BlockHeight:
-      printNumberCentreish(lastBlockHeight);
-      break;
-    case DisplayData::MempoolFees:
-      displayFees();
-      break;
-    default:
-      Serial.println("default");
-      Serial.println(i);
-      break;
-    }
+    showCurrentData(displayData);
   }
 }
