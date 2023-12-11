@@ -110,7 +110,6 @@ int32_t hourFee = 0;
 int32_t economyFee = 0;
 int32_t minimumFee = 0;
 
-
 String lastFees = "";
 void displayFees()
 {
@@ -474,43 +473,32 @@ void click(int period)
 
 void setup()
 {
-  delay(2000);
-  Serial.begin(115200);
-  Serial.println("Booted up");
-
-  /* Set the brightness min:1, max:15 */
-  ld.setBright(1);
-
-  /* Set the digit count */
-  ld.setDigitLimit(8);
-
   delay(1000);
+  Serial.begin(115200);
+  Serial.println("Boot");
+
+  ld.setBright(1);
+  ld.setDigitLimit(8);
+  writeTextCentered("Boot");
 
   pinMode(BUZZER_PIN, OUTPUT); // Set the buzzer pin as an output.
-  // click on boot
   click(225);
 
   animateClear();
-  // writeBitcoin();
-  animateClear();
   writeTickTock();
 
-  // read state of tactile switch
   pinMode(TACTILE_SWITCH_PIN, INPUT_PULLUP);
-  Serial.println("Tactile switch state");
-  Serial.println(digitalRead(TACTILE_SWITCH_PIN));
 
   Serial.println("initing wifi");
-  writeTextCentered("Init");
+  writeTextCentered("INIT NET");
   initWiFi();
-  // say connected to internet in 8 chars
-  writeTextCentered("Lets go");
+
+  writeTextCentered("HAS NET");
   Serial.println("wifi connected");
 
   setBlockHeight();
   getBitcoinPrice();
 
-  // Setup coinbaseWebSocket
   coinbaseWebSocket.beginSSL("ws-feed.exchange.coinbase.com", 443, "/");
   coinbaseWebSocket.onEvent(coinbaseWebSocketEvent);
   coinbaseWebSocket.setReconnectInterval(5000);
@@ -518,6 +506,8 @@ void setup()
 
   mempoolWebSocket.beginSSL("mempool.space", 443, "/api/v1/ws");
   mempoolWebSocket.onEvent(mempoolWebSocketEvent);
+  mempoolWebSocket.setReconnectInterval(5000);
+  mempoolWebSocket.enableHeartbeat(15000, 3000, 2);
 }
 
 void loop()
@@ -530,8 +520,8 @@ void loop()
   {
     Serial.println("Button pressed");
     delay(300);
-    // increment DisplayData
     i++;
+
     if (i > 3)
     {
       i = 0;
@@ -575,6 +565,5 @@ void loop()
       Serial.println(i);
       break;
     }
-
   }
 }
