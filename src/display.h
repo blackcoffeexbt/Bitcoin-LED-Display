@@ -68,21 +68,38 @@ void writeLetterAtPos(int pos, char ch) {
   ld.write(pos, convertCharToSegment(ch));
 }
 
+void writeText(String text, int pos = 0, bool shouldClear = true) {
+  if (shouldClear) ld.clear();
+  int nextCharPos = 0;
 
-void writeText(String text) {
-  ld.clear();
-  // Display up to 8 characters starting from the current position
-  for (int digit = 0; digit < 8; ++digit) {
-    int charPos = digit;
-    int textLength = text.length();
-    if (charPos >= 0 && charPos < textLength) {
-      char ch = text[charPos];
-      uint8_t seg = convertCharToSegment(ch);
-      // if the next character is a dot, add it to the current character
-      if (charPos + 1 < textLength && text[charPos + 1] == '.') {
-        seg |= B10000000;
-      }
-      ld.write(8 - digit, seg);
+  // Display up to 8 characters starting from the specified position
+  for (int digit = pos; digit < 8; ++digit) {
+    if (nextCharPos >= text.length()) {
+      break; // Exit loop if end of text is reached
+    }
+
+    char ch = text[nextCharPos];
+    uint8_t seg = convertCharToSegment(ch);
+
+    // If the next character is a dot, add it to the current character
+    if (nextCharPos + 1 < text.length() && text[nextCharPos + 1] == '.') {
+      seg |= B10000000; // Add the DP to the current segment
+      nextCharPos++; // Increment to skip the dot in the next iteration
+    }
+
+    ld.write(8 - digit, seg);
+    nextCharPos++; // Increment to the next character
+  }
+}
+
+void writeTextCentered(String text) {
+  // get text length minus dots
+  int textLength = text.length();
+  for (int i = 0; i < text.length(); ++i) {
+    if (text[i] == '.') {
+      textLength--;
     }
   }
+  int pos = (8 - textLength) / 2;
+  writeText(text, pos);
 }

@@ -50,6 +50,7 @@ WebSocketsClient mempoolWebSocket;
 
 void printNumberCentreish(int number)
 {
+  ld.clear();
   // get number of digits in height
   int digits = floor(log10(abs(number))) + 1;
   // differeence
@@ -71,7 +72,10 @@ void handleIncomingMessage(char *message)
     Serial.print("BTC-USD Price: ");
     Serial.println(price);
 
-    if(displayData == DisplayData::PriceAndHeight || displayData == DisplayData::Price) {
+    if(
+      (displayData == DisplayData::PriceAndHeight || displayData == DisplayData::Price)
+      && bitcoinPrice != atoi(price)
+      ) {
       bitcoinPrice = atoi(price);
       ld.clear();
       // print from first LED
@@ -106,6 +110,18 @@ int32_t hourFee = 0;
 int32_t economyFee = 0;
 int32_t minimumFee = 0;
 
+
+String lastFees = "";
+void displayFees()
+{
+  Serial.println("displayFees called");
+  String fees = String(economyFee) + "." + String(hourFee) + "." + String(fastestFee);
+  if(fees != lastFees) {
+    writeTextCentered(fees);
+    lastFees = fees;
+  }
+}
+
 void parseFees(char *payload)
 {
   StaticJsonDocument<2000> doc;
@@ -125,20 +141,7 @@ void parseFees(char *payload)
   // display fees
   if (displayData == DisplayData::MempoolFees)
   {
-    ld.clear();
-    // display economy fee, hour fee, fastest fee on the same screen with the dp on the right of each number, numbered 0 = far left, 7 = far right
-    // ld.write(0, B00000001); // .
-    ld.printDigit(economyFee, 7);
-    // determine start char based on number of digits of economyFee
-    // int digits = floor(log10(abs(economyFee))) + 1;
-    // //
-    
-    // // ld.write(6, B00000001); // .
-    // ld.printDigit(hourFee, 5);
-    // // ld.write(4, B00000001); // .
-    // ld.printDigit(fastestFee, 3);
-
-    delay(3000);
+    displayFees();
   }
 }
 
@@ -304,7 +307,7 @@ void animateClear()
   delay(animDelay);
 }
 
-void displayBitcoinPrice()
+void getBitcoinPrice()
 {
   // Get block height
   const String line = getEndpointData("https://api.coinbase.com/v2/prices/BTC-USD/buy");
@@ -317,23 +320,6 @@ void displayBitcoinPrice()
   Serial.println(amount);
 
   bitcoinPrice = atoi(amount);
-
-  Serial.println("bitcoinPrice is");
-  Serial.println(bitcoinPrice);
-
-  animateClear();
-  ld.write(8, B0011111); // b
-  ld.write(7, B0001111); // t
-  ld.write(6, B0001101); // c
-  ld.write(5, B0011100); // U
-  ld.write(4, B1011011); // S
-  ld.write(3, B0111101); // d
-  delay(1000);
-
-  animateClear();
-  ld.clear();
-  // print from first LED
-  ld.printDigit(bitcoinPrice);
 }
 
 /**
@@ -373,7 +359,7 @@ void configModeCallback(WiFiManager *myWiFiManager)
   Serial.println("Entered config mode");
   Serial.println(WiFi.softAPIP());
   Serial.println(myWiFiManager->getConfigPortalSSID());
-  writeText("Config");
+  writeTextCentered("Config");
 }
 
 void initWiFi()
@@ -515,13 +501,14 @@ void setup()
   Serial.println(digitalRead(TACTILE_SWITCH_PIN));
 
   Serial.println("initing wifi");
-  writeText("Init");
+  writeTextCentered("Init");
   initWiFi();
   // say connected to internet in 8 chars
-  writeText("Lets go");
+  writeTextCentered("Lets go");
   Serial.println("wifi connected");
 
   setBlockHeight();
+  getBitcoinPrice();
 
   // Setup coinbaseWebSocket
   coinbaseWebSocket.beginSSL("ws-feed.exchange.coinbase.com", 443, "/");
@@ -550,40 +537,44 @@ void loop()
       i = 0;
     }
     displayData = static_cast<DisplayData>(i);
+    Serial.println(displayData);
     // show on the display what is being displayed
     switch (displayData)
     {
     case DisplayData::PriceAndHeight:
-      writeText("USDHeight");
+      Serial.println("PriceAndHeight");
+      writeTextCentered("USDHeight");
+      delay(1000);
+      // show height, then price ticker
+      printNumberCentreish(lastBlockHeight);
+      delay(1000);
+      printNumberCentreish(bitcoinPrice);
       break;
     case DisplayData::Price:
-      writeText("Price");
+      Serial.println("Price");
+      writeTextCentered("Price");
+      delay(1000);
+      printNumberCentreish(bitcoinPrice);
       break;
     case DisplayData::BlockHeight:
-      writeText("Height");
-      ld.clear();
-      delay(500);
+      writeTextCentered("HEIGHT");
+      Serial.println("BlockHeight");
+      delay(1000);
       printNumberCentreish(lastBlockHeight);
       break;
     case DisplayData::MempoolFees:
-      writeText("Fees");
+      Serial.println("MempoolFees");
+      writeTextCentered("FEES");
+      delay(1000);
+      displayFees();
+      break;
+    default:
+      writeTextCentered("---");
+      delay(1000);
+      Serial.println("default");
+      Serial.println(i);
       break;
     }
 
   }
-
-  // if(isFeesDisplayEnabled) {
-
-  //   displayMempoolFees();
-  //   delay(2000);
-  // }
-  // displayBitcoinPrice();
-  // delay(20000);
-
-  // if(isFeesDisplayEnabled) {
-  //   displayMempoolFees();
-  //   delay(2000);
-  // }
-  // displayBlockHeight();
-  // delay(20000);
 }
