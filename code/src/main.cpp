@@ -8,7 +8,7 @@
 #include "DigitLedDisplay.h"
 #include "display.h"
 
-const char* firmwareVersion = "1.0.2";  // Current firmware version
+const char* firmwareVersion = "1.0.6";  // Current firmware version
 const char* firmwareJsonUrl = "https://sx6.store/bitkoclock/firmware.json";
 
 /* Arduino Pin to Display Pin
@@ -74,7 +74,8 @@ void updateFirmware(String firmwareUrl) {
 
       if (Update.end()) {
         if (Update.isFinished()) {
-          writeTextCentered("Done");
+          writeTextCentered("UPDATED");
+          delay(500);
           Serial.println("Update successfully completed. Rebooting...");
           ESP.restart();
         } else {
