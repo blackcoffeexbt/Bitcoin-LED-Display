@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <ArduinoOTA.h>
 #include <WebSocketsClient.h>
 #include <ArduinoJson.h>
 #include <WiFi.h>
@@ -6,6 +7,9 @@
 #include <WiFiManager.h>
 #include "DigitLedDisplay.h"
 #include "display.h"
+
+const char* firmwareVersion = "1.0.2";  // Current firmware version
+const char* firmwareJsonUrl = "https://sx6.store/bitkoclock/firmware.json";
 
 /* Arduino Pin to Display Pin
    7 to DIN,
@@ -47,6 +51,66 @@ void animateClear();
 
 WebSocketsClient coinbaseWebSocket;
 WebSocketsClient mempoolWebSocket;
+
+void updateFirmware(String firmwareUrl) {
+  writeTextCentered("UPDATING");
+  HTTPClient http;
+  http.begin(firmwareUrl);
+  int httpCode = http.GET();
+
+  if (httpCode == 200) {
+    int contentLength = http.getSize();
+    bool canBegin = Update.begin(contentLength);
+
+    if (canBegin) {
+      WiFiClient *client = http.getStreamPtr();
+      size_t written = Update.writeStream(*client);
+      
+      if (written == contentLength) {
+        Serial.println("Written : " + String(written) + " successfully");
+      } else {
+        Serial.println("Write failed. Written only : " + String(written));
+      }
+
+      if (Update.end()) {
+        if (Update.isFinished()) {
+          writeTextCentered("Done");
+          Serial.println("Update successfully completed. Rebooting...");
+          ESP.restart();
+        } else {
+          Serial.println("Update not finished? Something went wrong!");
+        }
+      } else {
+        Serial.println("Error Occurred. Error #: " + String(Update.getError()));
+      }
+    } else {
+      Serial.println("Not enough space to begin OTA");
+    }
+  } else {
+    Serial.println("Failed to fetch firmware");
+  }
+
+  http.end();
+}
+
+void parseJson(String json) {
+  DynamicJsonDocument doc(1024);
+  deserializeJson(doc, json);
+
+  const char* serverVersion = doc["version"];
+  String firmwareUrl = doc["firmwareUrl"];
+
+  if (String(firmwareVersion) != serverVersion) {
+    updateFirmware(firmwareUrl);
+  }
+}
+
+void checkForUpdates() {
+  String payload = getEndpointData(firmwareJsonUrl);
+  Serial.println("firmware");
+  Serial.println(payload);
+  parseJson(payload);
+}
 
 void printNumberCentreish(int number)
 {
@@ -281,12 +345,8 @@ void displayMempoolFees()
 
 void setBlockHeight()
 {
-  // Get block height
   const String line = getEndpointData("https://mempool.space/api/blocks/tip/height");
-  // const String line = getEndpointData("/bh");
-  
   lastBlockHeight = line.toInt();
-
 }
 
 void animateClear()
@@ -366,7 +426,6 @@ void initWiFi()
   // WiFiManager for auto-connecting to Wi-Fi
   WiFiManager wifiManager;
   wifiManager.setAPCallback(configModeCallback);
-  // set timeout
   wifiManager.setConnectRetries(5);
   wifiManager.setConnectTimeout(10);
   wifiManager.autoConnect("AutoConnectAP", "ToTheMoon1");
@@ -479,10 +538,11 @@ void setup()
 
   ld.setBright(1);
   ld.setDigitLimit(8);
-  writeTextCentered("Boot");
+  writeTextCentered(String(firmwareVersion));
+  click(225);
+  delay(500);
 
   pinMode(BUZZER_PIN, OUTPUT); // Set the buzzer pin as an output.
-  click(225);
 
   animateClear();
   writeTickTock();
@@ -495,6 +555,10 @@ void setup()
 
   writeTextCentered("HAS NET");
   Serial.println("wifi connected");
+
+  delay(1000);
+
+  checkForUpdates();
 
   setBlockHeight();
   getBitcoinPrice();
