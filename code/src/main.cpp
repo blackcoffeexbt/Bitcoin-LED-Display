@@ -8,7 +8,7 @@
 #include "DigitLedDisplay.h"
 #include "display.h"
 
-const char* firmwareVersion = "1.0.9";  // Current firmware version
+const char* firmwareVersion = "0.0.1";  // Current firmware version
 const char* firmwareJsonUrl = "https://sx6.store/bitkoclock/firmware.json";
 
 /* Arduino Pin to Display Pin
@@ -598,7 +598,7 @@ void setup()
   writeTextCentered("INIT NET");
   initWiFi();
 
-  writeTextCentered("HAS NET");
+  writeTextCentered("HAS INET");
   Serial.println("wifi connected");
 
   checkForUpdates();
