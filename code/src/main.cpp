@@ -10,7 +10,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-const char* firmwareVersion = "0.0.4";  // Current firmware version
+const char* firmwareVersion = "0.0.5";  // Current firmware version
 const char* firmwareJsonUrl = "https://sx6.store/bitkoclock/firmware.json";
 
 String textToWrite = "";
@@ -422,7 +422,7 @@ void showCurrentData(DisplayData displayData) {
     {
     case DisplayData::PriceAndHeight:
       Serial.println("PriceAndHeight");
-      textToWrite = "Price - Chain tip";
+      textToWrite = "Price - Height";
       delay(3500);
       // show height, then price ticker
       textToWrite = String(lastBlockHeight);
@@ -436,7 +436,7 @@ void showCurrentData(DisplayData displayData) {
       textToWrite = String(lastBitcoinPrice);
       break;
     case DisplayData::BlockHeight:
-      textToWrite = "Chain tip";
+      textToWrite = "Height";
       Serial.println("BlockHeight");
       delay(1000);
       textToWrite = String(lastBlockHeight);
