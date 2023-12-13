@@ -10,7 +10,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-const char* firmwareVersion = "0.0.3";  // Current firmware version
+const char* firmwareVersion = "0.0.4";  // Current firmware version
 const char* firmwareJsonUrl = "https://sx6.store/bitkoclock/firmware.json";
 
 String textToWrite = "";
@@ -71,7 +71,7 @@ void writeTextTask(void *pvParameters) {
 }
 
 void updateFirmware(String firmwareUrl) {
-  textToWrite = "Updating self";
+  textToWrite = "Updating...";
   HTTPClient http;
   http.begin(firmwareUrl);
   int httpCode = http.GET();
