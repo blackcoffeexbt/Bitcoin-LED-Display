@@ -68,55 +68,52 @@ void writeLetterAtPos(int pos, char ch) {
   ld.write(pos, convertCharToSegment(ch));
 }
 
-#include <Arduino.h>
+// Global variables or part of a struct
+int textPos = 0;
+bool scrollForward = true;
 
-void writeText(String text, bool shouldClear = true) {
-  int textLength = text.length();
-  int pos = 0;
-  bool forward = true;
+void writeText(String text, int pos = 0, bool shouldClear = true) {
+  String displayText = text;
+  int textLength = displayText.length();
 
-    if (shouldClear) ld.clear();
+  if (shouldClear) ld.clear();
 
-    int nextCharPos = pos;
-    for (int digit = 0; digit < 8; ++digit) {
-      if (nextCharPos >= textLength) {
-        break; // Exit loop if end of text is reached
-      }
-
-      char ch = text[nextCharPos];
-      uint8_t seg = convertCharToSegment(ch);
-
-      // If the next character is a dot, add it to the current character
-      if (nextCharPos + 1 < textLength && text[nextCharPos + 1] == '.') {
-        seg |= B10000000; // Add the DP to the current segment
-        nextCharPos++; // Increment to skip the dot in the next iteration
-      }
-
-      ld.write(8 - digit, seg);
-      nextCharPos++; // Increment to the next character
+  int nextCharPos = textPos;
+  for (int digit = 0; digit < 8; ++digit) {
+    if (nextCharPos >= textLength) {
+      break; // Exit loop if end of text is reached
     }
 
-    delay(300); // 100ms delay for scrolling effect
+    char ch = displayText[nextCharPos];
+    uint8_t seg = convertCharToSegment(ch);
 
-    // Update position for scrolling
-    if (forward) {
-      if (pos < textLength - 8) {
-        pos++; // Move forward
-      } else {
-        forward = false; // Change direction at the end
-        // pause
-        delay(300);
-      }
+    // If the next character is a dot, add it to the current character
+    if (nextCharPos + 1 < textLength && displayText[nextCharPos + 1] == '.') {
+      seg |= B10000000; // Add the DP to the current segment
+      nextCharPos++; // Increment to skip the dot in the next iteration
+    }
+
+    ld.write(8 - digit, seg);
+    nextCharPos++; // Increment to the next character
+  }
+
+  // Update position for scrolling
+  if (scrollForward) {
+    if (textPos < textLength - 8) {
+      textPos++; // Move forward
     } else {
-      if (pos > 0) {
-        pos--; // Move backward
-      } else {
-        forward = true; // Change direction at the beginning
-        // pause
-        delay(300);
-      }
+      scrollForward = false; // Change direction at the end
     }
+  } else {
+    if (textPos > 0) {
+      textPos--; // Move backward
+    } else {
+      scrollForward = true; // Change direction at the beginning
+    }
+  }
+  delay(250);
 }
+
 
 void writeTextCentered(String text) {
   // get text length minus dots
