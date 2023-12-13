@@ -68,28 +68,54 @@ void writeLetterAtPos(int pos, char ch) {
   ld.write(pos, convertCharToSegment(ch));
 }
 
-void writeText(String text, int pos = 0, bool shouldClear = true) {
-  if (shouldClear) ld.clear();
-  int nextCharPos = 0;
+#include <Arduino.h>
 
-  // Display up to 8 characters starting from the specified position
-  for (int digit = pos; digit < 8; ++digit) {
-    if (nextCharPos >= text.length()) {
-      break; // Exit loop if end of text is reached
+void writeText(String text, bool shouldClear = true) {
+  int textLength = text.length();
+  int pos = 0;
+  bool forward = true;
+
+    if (shouldClear) ld.clear();
+
+    int nextCharPos = pos;
+    for (int digit = 0; digit < 8; ++digit) {
+      if (nextCharPos >= textLength) {
+        break; // Exit loop if end of text is reached
+      }
+
+      char ch = text[nextCharPos];
+      uint8_t seg = convertCharToSegment(ch);
+
+      // If the next character is a dot, add it to the current character
+      if (nextCharPos + 1 < textLength && text[nextCharPos + 1] == '.') {
+        seg |= B10000000; // Add the DP to the current segment
+        nextCharPos++; // Increment to skip the dot in the next iteration
+      }
+
+      ld.write(8 - digit, seg);
+      nextCharPos++; // Increment to the next character
     }
 
-    char ch = text[nextCharPos];
-    uint8_t seg = convertCharToSegment(ch);
+    delay(300); // 100ms delay for scrolling effect
 
-    // If the next character is a dot, add it to the current character
-    if (nextCharPos + 1 < text.length() && text[nextCharPos + 1] == '.') {
-      seg |= B10000000; // Add the DP to the current segment
-      nextCharPos++; // Increment to skip the dot in the next iteration
+    // Update position for scrolling
+    if (forward) {
+      if (pos < textLength - 8) {
+        pos++; // Move forward
+      } else {
+        forward = false; // Change direction at the end
+        // pause
+        delay(300);
+      }
+    } else {
+      if (pos > 0) {
+        pos--; // Move backward
+      } else {
+        forward = true; // Change direction at the beginning
+        // pause
+        delay(300);
+      }
     }
-
-    ld.write(8 - digit, seg);
-    nextCharPos++; // Increment to the next character
-  }
 }
 
 void writeTextCentered(String text) {

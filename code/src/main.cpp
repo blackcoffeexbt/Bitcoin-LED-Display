@@ -7,9 +7,13 @@
 #include <WiFiManager.h>
 #include "DigitLedDisplay.h"
 #include "display.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 const char* firmwareVersion = "0.0.1";  // Current firmware version
 const char* firmwareJsonUrl = "https://sx6.store/bitkoclock/firmware.json";
+
+String textToWrite = "";
 
 /* Arduino Pin to Display Pin
    7 to DIN,
@@ -51,6 +55,19 @@ void animateClear();
 
 WebSocketsClient coinbaseWebSocket;
 WebSocketsClient mempoolWebSocket;
+
+// task for writeText
+void writeTextTask(void *pvParameters) {
+    // Cast pvParameters to the appropriate type if needed
+    // For example, if pvParameters is a String:
+    // String text = *((String*) pvParameters);
+
+    // Infinite loop to continuously update the display
+    for (;;) {
+        writeText(textToWrite);
+        vTaskDelay(pdMS_TO_TICKS(100)); // Delay for 100ms
+    }
+}
 
 void updateFirmware(String firmwareUrl) {
   writeTextCentered("UPDATING");
@@ -583,56 +600,41 @@ void setup()
 
   ld.setBright(0);
   ld.setDigitLimit(8);
-  writeTextCentered(String(firmwareVersion));
-  click(225);
-  delay(500);
 
-  pinMode(BUZZER_PIN, OUTPUT); // Set the buzzer pin as an output.
+  textToWrite = "Hello World";
 
-  animateClear();
-  writeTickTock();
-
-  pinMode(TACTILE_SWITCH_PIN, INPUT_PULLUP);
-
-  Serial.println("initing wifi");
-  writeTextCentered("INIT NET");
-  initWiFi();
-
-  writeTextCentered("HAS INET");
-  Serial.println("wifi connected");
-
-  checkForUpdates();
-
-  setBlockHeight();
-  getBitcoinPrice();
-  showCurrentData(displayData);
-
-  coinbaseWebSocket.beginSSL("ws-feed.exchange.coinbase.com", 443, "/");
-  coinbaseWebSocket.onEvent(coinbaseWebSocketEvent);
-  coinbaseWebSocket.setReconnectInterval(5000);
-  coinbaseWebSocket.enableHeartbeat(15000, 3000, 2);
-
-  mempoolWebSocket.beginSSL("mempool.space", 443, "/api/v1/ws");
-  mempoolWebSocket.onEvent(mempoolWebSocketEvent);
-  mempoolWebSocket.setReconnectInterval(5000);
-  mempoolWebSocket.enableHeartbeat(15000, 3000, 2);
+  // set up the tasks
+  xTaskCreate(
+    writeTextTask, // Function that should be called
+    "writeTextTask", // Name of the task (for debugging)
+    10000, // Stack size (bytes)
+    NULL, // Parameter to pass
+    1, // Task priority
+    NULL // Task handle
+  );
+  // task loop
 }
 
 void loop()
 {
-  coinbaseWebSocket.loop();
-  mempoolWebSocket.loop();
-
-  // watch for button press, on each press, delay 300ms and set DisplayData to next enum value
-  if (digitalRead(TACTILE_SWITCH_PIN) == LOW)
+  // declare an array of 10 phrases
+  String phrases[10] = {
+    "Hello World",
+    "To The Moon",
+    "HODL",
+    "BTC",
+    "Lightning",
+    "Satoshi",
+    "Stacking Sats",
+    "Not Your Keys",
+    "Not Your Coins",
+    "Not Your Node"
+  };
+  // every 3 seconds show a new phrase
+  for (int i = 0; i < 10; i++)
   {
-    i++;
-
-    if (i > 3)
-    {
-      i = 0;
-    }
-    displayData = static_cast<DisplayData>(i);
-    showCurrentData(displayData);
+    textToWrite = phrases[i];
+    delay(3000);
   }
+  
 }
