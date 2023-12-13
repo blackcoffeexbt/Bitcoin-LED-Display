@@ -614,29 +614,30 @@ void setup()
     NULL // Task handle
   );
   // task loop
+  textToWrite = "213.234.123.";
 }
 
 void loop()
 {
-  // declare an array of 10 phrases
-  String phrases[10] = {
-    "Hello World",
-    "To The Moon",
-    "HODL",
-    "BTC",
-    "Lightning",
-    "Satoshi",
-    "Stacking Sats",
-    "Not Your Keys",
-    "Not Your Coins",
-    "Not Your Node"
-  };
-  // every 3 seconds show a new phrase
-  for (int i = 0; i < 10; i++)
-  {
-    textPos = 0;
-    textToWrite = phrases[i];
-    delay(3000);
-  }
+  // // declare an array of 10 phrases
+  // String phrases[10] = {
+  //   "Hello World",
+  //   "To The Moon",
+  //   "HODL",
+  //   "BTC",
+  //   "Lightning",
+  //   "Satoshi",
+  //   "Stacking Sats",
+  //   "Not Your Keys",
+  //   "Not Your Coins",
+  //   "Not Your Node"
+  // };
+  // // every 3 seconds show a new phrase
+  // for (int i = 0; i < 10; i++)
+  // {
+  //   textPos = 0;
+  //   textToWrite = phrases[i];
+  //   delay(3000);
+  // }
   
 }
