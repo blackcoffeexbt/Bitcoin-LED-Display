@@ -124,5 +124,26 @@ void writeTextCentered(String text) {
     }
   }
   int pos = (8 - textLength) / 2;
-  writeText(text, pos);
+  
+  ld.clear();
+  int nextCharPos = 0;
+
+  // Display up to 8 characters starting from the specified position
+  for (int digit = pos; digit < 8; ++digit) {
+    if (nextCharPos >= text.length()) {
+      break; // Exit loop if end of text is reached
+    }
+
+    char ch = text[nextCharPos];
+    uint8_t seg = convertCharToSegment(ch);
+
+    // If the next character is a dot, add it to the current character
+    if (nextCharPos + 1 < text.length() && text[nextCharPos + 1] == '.') {
+      seg |= B10000000; // Add the DP to the current segment
+      nextCharPos++; // Increment to skip the dot in the next iteration
+    }
+
+    ld.write(8 - digit, seg);
+    nextCharPos++; // Increment to the next character
+  }
 }
