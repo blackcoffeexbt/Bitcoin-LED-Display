@@ -614,7 +614,7 @@ void setup()
     NULL // Task handle
   );
   // task loop
-  textToWrite = "213.234.123.";
+  textToWrite = "123 - 456 - 789";
 }
 
 void loop()
