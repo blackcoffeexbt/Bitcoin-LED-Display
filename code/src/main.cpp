@@ -10,7 +10,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-const char* firmwareVersion = "0.0.2";  // Current firmware version
+const char* firmwareVersion = "0.0.3";  // Current firmware version
 const char* firmwareJsonUrl = "https://sx6.store/bitkoclock/firmware.json";
 
 String textToWrite = "";
@@ -92,7 +92,7 @@ void updateFirmware(String firmwareUrl) {
 
       if (Update.end()) {
         if (Update.isFinished()) {
-          textToWrite = "Update Complete";
+          textToWrite = "Update done";
           delay(2000);
           Serial.println("Update successfully completed. Rebooting...");
           textToWrite = "Rebooting";
