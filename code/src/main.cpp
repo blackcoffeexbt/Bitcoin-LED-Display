@@ -10,7 +10,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-const char* firmwareVersion = "0.0.1";  // Current firmware version
+const char* firmwareVersion = "0.0.2";  // Current firmware version
 const char* firmwareJsonUrl = "https://sx6.store/bitkoclock/firmware.json";
 
 String textToWrite = "";
@@ -71,7 +71,7 @@ void writeTextTask(void *pvParameters) {
 }
 
 void updateFirmware(String firmwareUrl) {
-  textToWrite = "UPDATING";
+  textToWrite = "Updating self";
   HTTPClient http;
   http.begin(firmwareUrl);
   int httpCode = http.GET();
@@ -92,9 +92,11 @@ void updateFirmware(String firmwareUrl) {
 
       if (Update.end()) {
         if (Update.isFinished()) {
-          textToWrite = "UPDATED";
-          delay(500);
+          textToWrite = "Update Complete";
+          delay(2000);
           Serial.println("Update successfully completed. Rebooting...");
+          textToWrite = "Rebooting";
+          delay(1500);
           ESP.restart();
         } else {
           Serial.println("Update not finished? Something went wrong!");
@@ -112,7 +114,7 @@ void updateFirmware(String firmwareUrl) {
   http.end();
 }
 
-void parseJson(String json) {
+void parseFirmwareJson(String json) {
   DynamicJsonDocument doc(1024);
   deserializeJson(doc, json);
 
@@ -128,7 +130,7 @@ void checkForUpdates() {
   String payload = getEndpointData(firmwareJsonUrl);
   Serial.println("firmware");
   Serial.println(payload);
-  parseJson(payload);
+  parseFirmwareJson(payload);
 }
 
 void handleIncomingMessage(char *message)
@@ -182,7 +184,7 @@ String lastFees = "";
 void displayFees()
 {
   Serial.println("displayFees called");
-  String fees = String(economyFee) + "." + String(hourFee) + "." + String(fastestFee);
+  String fees = String(economyFee) + " - " + String(hourFee) + " - " + String(fastestFee);
   if(fees != lastFees) {
     textToWrite = fees;
     lastFees = fees;
@@ -420,11 +422,11 @@ void showCurrentData(DisplayData displayData) {
     {
     case DisplayData::PriceAndHeight:
       Serial.println("PriceAndHeight");
-      textToWrite = "USDHeight";
-      delay(1000);
+      textToWrite = "Price - Chain tip";
+      delay(3500);
       // show height, then price ticker
       textToWrite = String(lastBlockHeight);
-      delay(1000);
+      delay(2000);
       textToWrite = String(lastBitcoinPrice);
       break;
     case DisplayData::Price:
@@ -434,7 +436,7 @@ void showCurrentData(DisplayData displayData) {
       textToWrite = String(lastBitcoinPrice);
       break;
     case DisplayData::BlockHeight:
-      textToWrite = "HEIGHT";
+      textToWrite = "Chain tip";
       Serial.println("BlockHeight");
       delay(1000);
       textToWrite = String(lastBlockHeight);
@@ -484,10 +486,10 @@ void setup()
   pinMode(TACTILE_SWITCH_PIN, INPUT_PULLUP);
 
   Serial.println("initing wifi");
-  textToWrite = "INIT NET";
+  textToWrite = "Connecting";
   initWiFi();
 
-  textToWrite = "HAS INET";
+  textToWrite = "Connected";
   Serial.println("wifi connected");
 
   checkForUpdates();

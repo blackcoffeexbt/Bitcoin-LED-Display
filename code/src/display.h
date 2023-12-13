@@ -68,6 +68,22 @@ void writeLetterAtPos(int pos, char ch) {
   ld.write(pos, convertCharToSegment(ch));
 }
 
+
+int getScrollLength(String text) {
+  int length = 0;
+  for (int i = 0; i < text.length(); i++) {
+  //   if (text[i] != '.' || (i > 0 && text[i-1] == '.')) {
+      length++;
+  //   }
+  }
+  return length;
+}
+
+bool isAtEnd(String text, int pos) {
+  int effectiveLength = getScrollLength(text);
+  return pos >= effectiveLength - 8;
+}
+
 // Global variables or part of a struct
 int textPos = 0;
 bool scrollForward = true;
@@ -83,6 +99,8 @@ void scrollText(String text) {
     }
 
     char ch = text[nextCharPos];
+    // print current char
+    Serial.println(text[nextCharPos]);
     uint8_t seg = convertCharToSegment(ch);
 
     // If the next character is a dot, add it to the current character
@@ -97,24 +115,21 @@ void scrollText(String text) {
 
   // Update position for scrolling
   if (scrollForward) {
-    if (textPos < textLength - 8) {
+    if (!isAtEnd(text, textPos)) {
       textPos++; // Move forward
     } else {
       scrollForward = false; // Change direction at the end
-      delay(500);
     }
   } else {
     if (textPos > 0) {
       textPos--; // Move backward
     } else {
       scrollForward = true; // Change direction at the beginning
-      delay(500);
     }
   }
-  // pause between frames
-  delay(250);
+  // Pause between frames
+  delay(150);
 }
-
 
 void writeTextCentered(String text) {
   // get text length minus dots
@@ -124,7 +139,10 @@ void writeTextCentered(String text) {
       textLength--;
     }
   }
-  int pos = (8 - textLength) / 2;
+  // calculate starting position
+  float startPos = 4 - textLength / 2.0;
+  // if < 0 then start at 0 else ceil
+  int pos = startPos < 0 ? 0 : ceil(startPos);
   
   ld.clear();
   int nextCharPos = 0;
@@ -154,7 +172,7 @@ void writeText(String text, bool shouldClear = true) {
   // if text length > 8 chars, scroll, otherwise center
   if (text.length() > 8) {
     // add spaces to the beginning and end of the text to make it more readable
-    text = " " + text + " ";
+    text = "  " + text + "  ";
     scrollText(text);
   } else {
     writeTextCentered(text);
