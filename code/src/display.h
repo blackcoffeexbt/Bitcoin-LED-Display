@@ -72,11 +72,9 @@ void writeLetterAtPos(int pos, char ch) {
 int textPos = 0;
 bool scrollForward = true;
 
-void writeText(String text, int pos = 0, bool shouldClear = true) {
-  String displayText = text;
-  int textLength = displayText.length();
-
-  if (shouldClear) ld.clear();
+void scrollText(String text) {
+  ld.clear();
+  int textLength = text.length();
 
   int nextCharPos = textPos;
   for (int digit = 0; digit < 8; ++digit) {
@@ -84,11 +82,11 @@ void writeText(String text, int pos = 0, bool shouldClear = true) {
       break; // Exit loop if end of text is reached
     }
 
-    char ch = displayText[nextCharPos];
+    char ch = text[nextCharPos];
     uint8_t seg = convertCharToSegment(ch);
 
     // If the next character is a dot, add it to the current character
-    if (nextCharPos + 1 < textLength && displayText[nextCharPos + 1] == '.') {
+    if (nextCharPos + 1 < textLength && text[nextCharPos + 1] == '.') {
       seg |= B10000000; // Add the DP to the current segment
       nextCharPos++; // Increment to skip the dot in the next iteration
     }
@@ -103,14 +101,17 @@ void writeText(String text, int pos = 0, bool shouldClear = true) {
       textPos++; // Move forward
     } else {
       scrollForward = false; // Change direction at the end
+      delay(500);
     }
   } else {
     if (textPos > 0) {
       textPos--; // Move backward
     } else {
       scrollForward = true; // Change direction at the beginning
+      delay(500);
     }
   }
+  // pause between frames
   delay(250);
 }
 
@@ -145,5 +146,17 @@ void writeTextCentered(String text) {
 
     ld.write(8 - digit, seg);
     nextCharPos++; // Increment to the next character
+  }
+}
+
+void writeText(String text, bool shouldClear = true) {
+  if(shouldClear) ld.clear();
+  // if text length > 8 chars, scroll, otherwise center
+  if (text.length() > 8) {
+    // add spaces to the beginning and end of the text to make it more readable
+    text = " " + text + " ";
+    scrollText(text);
+  } else {
+    writeTextCentered(text);
   }
 }

@@ -603,41 +603,40 @@ void setup()
   ld.setBright(0);
   ld.setDigitLimit(8);
 
-  writeTextCentered("TEST");
 
-  // // set up the tasks
-  // xTaskCreate(
-  //   writeTextTask, // Function that should be called
-  //   "writeTextTask", // Name of the task (for debugging)
-  //   10000, // Stack size (bytes)
-  //   NULL, // Parameter to pass
-  //   1, // Task priority
-  //   NULL // Task handle
-  // );
-  // // task loop
+  // set up the tasks
+  xTaskCreate(
+    writeTextTask, // Function that should be called
+    "writeTextTask", // Name of the task (for debugging)
+    10000, // Stack size (bytes)
+    NULL, // Parameter to pass
+    1, // Task priority
+    NULL // Task handle
+  );
+  // task loop
 }
 
 void loop()
 {
-  // // declare an array of 10 phrases
-  // String phrases[10] = {
-  //   "Hello World",
-  //   "To The Moon",
-  //   "HODL",
-  //   "BTC",
-  //   "Lightning",
-  //   "Satoshi",
-  //   "Stacking Sats",
-  //   "Not Your Keys",
-  //   "Not Your Coins",
-  //   "Not Your Node"
-  // };
-  // // every 3 seconds show a new phrase
-  // for (int i = 0; i < 10; i++)
-  // {
-  //   textPos = 0;
-  //   textToWrite = phrases[i];
-  //   delay(3000);
-  // }
+  // declare an array of 10 phrases
+  String phrases[10] = {
+    "Hello World",
+    "To The Moon",
+    "HODL",
+    "BTC",
+    "Lightning",
+    "Satoshi",
+    "Stacking Sats",
+    "Not Your Keys",
+    "Not Your Coins",
+    "Not Your Node"
+  };
+  // every 3 seconds show a new phrase
+  for (int i = 0; i < 10; i++)
+  {
+    textPos = 0;
+    textToWrite = phrases[i];
+    delay(3000);
+  }
   
 }
