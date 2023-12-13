@@ -68,8 +68,65 @@ void writeLetterAtPos(int pos, char ch) {
   ld.write(pos, convertCharToSegment(ch));
 }
 
-void writeText(String text, int pos = 0, bool shouldClear = true) {
-  if (shouldClear) ld.clear();
+// Global variables or part of a struct
+int textPos = 0;
+bool scrollForward = true;
+
+void scrollText(String text) {
+  ld.clear();
+  int textLength = text.length();
+
+  int nextCharPos = textPos;
+  for (int digit = 0; digit < 8; ++digit) {
+    if (nextCharPos >= textLength) {
+      break; // Exit loop if end of text is reached
+    }
+
+    char ch = text[nextCharPos];
+    uint8_t seg = convertCharToSegment(ch);
+
+    // If the next character is a dot, add it to the current character
+    if (nextCharPos + 1 < textLength && text[nextCharPos + 1] == '.') {
+      seg |= B10000000; // Add the DP to the current segment
+      nextCharPos++; // Increment to skip the dot in the next iteration
+    }
+
+    ld.write(8 - digit, seg);
+    nextCharPos++; // Increment to the next character
+  }
+
+  // Update position for scrolling
+  if (scrollForward) {
+    if (textPos < textLength - 8) {
+      textPos++; // Move forward
+    } else {
+      scrollForward = false; // Change direction at the end
+      delay(500);
+    }
+  } else {
+    if (textPos > 0) {
+      textPos--; // Move backward
+    } else {
+      scrollForward = true; // Change direction at the beginning
+      delay(500);
+    }
+  }
+  // pause between frames
+  delay(250);
+}
+
+
+void writeTextCentered(String text) {
+  // get text length minus dots
+  int textLength = text.length();
+  for (int i = 0; i < text.length(); ++i) {
+    if (text[i] == '.') {
+      textLength--;
+    }
+  }
+  int pos = (8 - textLength) / 2;
+  
+  ld.clear();
   int nextCharPos = 0;
 
   // Display up to 8 characters starting from the specified position
@@ -92,14 +149,14 @@ void writeText(String text, int pos = 0, bool shouldClear = true) {
   }
 }
 
-void writeTextCentered(String text) {
-  // get text length minus dots
-  int textLength = text.length();
-  for (int i = 0; i < text.length(); ++i) {
-    if (text[i] == '.') {
-      textLength--;
-    }
+void writeText(String text, bool shouldClear = true) {
+  if(shouldClear) ld.clear();
+  // if text length > 8 chars, scroll, otherwise center
+  if (text.length() > 8) {
+    // add spaces to the beginning and end of the text to make it more readable
+    text = " " + text + " ";
+    scrollText(text);
+  } else {
+    writeTextCentered(text);
   }
-  int pos = (8 - textLength) / 2;
-  writeText(text, pos);
 }

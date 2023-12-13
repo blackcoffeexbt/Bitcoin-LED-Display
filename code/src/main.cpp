@@ -7,9 +7,14 @@
 #include <WiFiManager.h>
 #include "DigitLedDisplay.h"
 #include "display.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 const char* firmwareVersion = "0.0.1";  // Current firmware version
 const char* firmwareJsonUrl = "https://sx6.store/bitkoclock/firmware.json";
+
+String textToWrite = "";
+extern int textPos;
 
 /* Arduino Pin to Display Pin
    7 to DIN,
@@ -38,7 +43,7 @@ DisplayData displayData = DisplayData::PriceAndHeight;
 const bool isFeesDisplayEnabled = true;
 
 int32_t blockHeight = 0;
-int32_t bitcoinPrice = 0;
+int32_t lastBitcoinPrice = 0;
 
 int32_t lastBlockHeight = 0;
 int32_t i = 0;
@@ -52,8 +57,21 @@ void animateClear();
 WebSocketsClient coinbaseWebSocket;
 WebSocketsClient mempoolWebSocket;
 
+// task for writeText
+void writeTextTask(void *pvParameters) {
+    // Cast pvParameters to the appropriate type if needed
+    // For example, if pvParameters is a String:
+    // String text = *((String*) pvParameters);
+
+    // Infinite loop to continuously update the display
+    for (;;) {
+        writeText(textToWrite);
+        vTaskDelay(pdMS_TO_TICKS(100)); // Delay for 100ms
+    }
+}
+
 void updateFirmware(String firmwareUrl) {
-  writeTextCentered("UPDATING");
+  textToWrite = "UPDATING";
   HTTPClient http;
   http.begin(firmwareUrl);
   int httpCode = http.GET();
@@ -74,7 +92,7 @@ void updateFirmware(String firmwareUrl) {
 
       if (Update.end()) {
         if (Update.isFinished()) {
-          writeTextCentered("UPDATED");
+          textToWrite = "UPDATED";
           delay(500);
           Serial.println("Update successfully completed. Rebooting...");
           ESP.restart();
@@ -113,18 +131,6 @@ void checkForUpdates() {
   parseJson(payload);
 }
 
-void printNumberCentreish(int number)
-{
-  ld.clear();
-  // get number of digits in height
-  int digits = floor(log10(abs(number))) + 1;
-  // differeence
-  int diff = 8 - digits;
-  // half it and round down
-  int halfDiff = floor(diff / 2);
-  ld.printDigit(number, halfDiff);
-}
-
 void handleIncomingMessage(char *message)
 {
   DynamicJsonDocument doc(1024);
@@ -133,18 +139,16 @@ void handleIncomingMessage(char *message)
   const char *type = doc["type"];
   if (strcmp(type, "ticker") == 0)
   {
-    const char *price = doc["price"];
+    const char *currentBitcoinPrice = doc["price"];
     Serial.print("BTC-USD Price: ");
-    Serial.println(price);
+    Serial.println(currentBitcoinPrice);
 
     if(
       (displayData == DisplayData::PriceAndHeight || displayData == DisplayData::Price)
-      && bitcoinPrice != atoi(price)
+      && lastBitcoinPrice != atoi(currentBitcoinPrice)
       ) {
-      bitcoinPrice = atoi(price);
-      ld.clear();
-      // print from first LED
-      printNumberCentreish(bitcoinPrice);
+      lastBitcoinPrice = atoi(currentBitcoinPrice);
+      textToWrite = String(lastBitcoinPrice);
     }
   }
 }
@@ -160,11 +164,10 @@ void parseBlockHeight(char *payload)
   if (displayData == DisplayData::PriceAndHeight ||
       displayData == DisplayData::Price)
   {
-    ld.clear();
-    printNumberCentreish(lastBlockHeight);
+    textToWrite = String(lastBlockHeight);
 
     if(displayData == DisplayData::PriceAndHeight) {
-      delay(3000);
+      delay(5000);
     }
   }
 }
@@ -181,7 +184,7 @@ void displayFees()
   Serial.println("displayFees called");
   String fees = String(economyFee) + "." + String(hourFee) + "." + String(fastestFee);
   if(fees != lastFees) {
-    writeTextCentered(fees);
+    textToWrite = fees;
     lastFees = fees;
   }
 }
@@ -196,12 +199,8 @@ void parseFees(char *payload)
   hourFee = doc["fees"]["hourFee"];
   economyFee = doc["fees"]["economyFee"];
   minimumFee = doc["fees"]["minimumFee"];
-  Serial.println("Fees");
-  Serial.println(fastestFee);
-  Serial.println(halfHourFee);
-  Serial.println(hourFee);
-  Serial.println(economyFee);
-  Serial.println(minimumFee);
+  Serial.println("Fees: Fastest: " + String(fastestFee) + " Half Hour: " + String(halfHourFee) + " Hour: " + String(hourFee) + " Economy: " + String(economyFee) + " Minimum: " + String(minimumFee));
+  
   // display fees
   if (displayData == DisplayData::MempoolFees)
   {
@@ -225,8 +224,8 @@ void mempoolWebSocketEvent(WStype_t type, uint8_t *payload, size_t length)
     // tft show "connected"
     break;
   case WStype_TEXT:
-    Serial.println("Received: ");
-    Serial.println((char *)payload);
+    // Serial.println("Received: ");
+    // Serial.println((char *)payload);
     // if payload includes the word ["block"]["height"] then parse it for the block height
     if (strstr((char *)payload, "block") && strstr((char *)payload, "height"))
     {
@@ -276,74 +275,6 @@ void coinbaseWebSocketEvent(WStype_t type, uint8_t *payload, size_t length)
   }
 }
 
-void displayMempoolFees()
-{
-  uint16_t pagingDelay = 2000;
-  DynamicJsonDocument doc(200);
-  String line = getEndpointData("https://mempool.space/api/v1/fees/recommended");
-
-  DeserializationError error = deserializeJson(doc, line);
-  if (error)
-  {
-    Serial.print("deserializeJson() failed: ");
-    Serial.println(error.f_str());
-  }
-
-  animateClear();
-  ld.write(8, B1000111); // f
-  ld.write(7, B1001111); // e
-  ld.write(6, B1001111); // e
-  ld.write(5, B1011011); // s
-  delay(1000);
-  animateClear();
-
-  uint16_t fee;
-  // none
-  fee = doc["minimumFee"];
-  // none
-  ld.clear();
-  ld.write(8, B1110110);  // N
-  ld.write(7, B1111110);  // O
-  ld.write(6, B1110110);  // N
-  ld.write(5, B01001111); // E
-  ld.printDigit(fee);
-  delay(pagingDelay);
-
-  // economy
-  fee = doc["economyFee"];
-  // economy
-  animateClear();
-  ld.clear();
-  ld.write(8, B01001111); // E
-  ld.write(7, B0001101);  // c
-  ld.write(6, B0011101);  // o
-  ld.printDigit(fee);
-  delay(pagingDelay);
-
-  // hour
-  fee = doc["hourFee"];
-  // hour
-  animateClear();
-  ld.clear();
-  ld.write(8, B0110111);  // H
-  ld.write(7, B0011101);  // o
-  ld.write(6, B0011100);  // u
-  ld.write(5, B00000101); // r
-  ld.printDigit(fee);
-  delay(pagingDelay);
-
-  // fast
-  fee = doc["fastestFee"];
-  // fast
-  animateClear();
-  ld.clear();
-  ld.write(8, B01000111); // F
-  ld.write(7, B01110111); // A
-  ld.write(6, B01011011); // S
-  ld.write(5, B00001111); // t
-  ld.printDigit(fee);
-}
-
 void setBlockHeight()
 {
   const String line = getEndpointData("https://mempool.space/api/blocks/tip/height");
@@ -379,7 +310,7 @@ void getBitcoinPrice()
   Serial.println("amount is");
   Serial.println(amount);
 
-  bitcoinPrice = atoi(amount);
+  lastBitcoinPrice = atoi(amount);
 }
 
 /**
@@ -419,7 +350,7 @@ void configModeCallback(WiFiManager *myWiFiManager)
   Serial.println("Entered config mode");
   Serial.println(WiFi.softAPIP());
   Serial.println(myWiFiManager->getConfigPortalSSID());
-  writeTextCentered("Config");
+  textToWrite = "Config";
 }
 
 void initWiFi()
@@ -432,58 +363,6 @@ void initWiFi()
   wifiManager.autoConnect("AutoConnectAP", "ToTheMoon1");
 
   Serial.println("Connected to WiFi");
-}
-
-void scrollWord(String word)
-{
-  uint16_t animDelay = 50;
-  for (uint8_t i = 8; i >= 1; i--)
-  {
-    if (i <= 8)
-    {
-      ld.write(i + 1, B00000000);
-    }
-    ld.write(i, B0001000);
-    delay(animDelay);
-  }
-  ld.clear();
-  delay(animDelay);
-}
-
-void writeBitcoin()
-{
-  ld.write(7, B01111111); // B
-  ld.write(6, B00110000); // i
-  ld.write(5, B00001111); // t
-  ld.write(4, B01001110); // c
-  ld.write(3, B01111110); // o
-  ld.write(2, B00110000); // i
-  ld.write(1, B01110110); // n
-}
-
-void writeTickTock()
-{
-  const uint16_t animDelay = 250;
-  ld.clear();
-
-  writeLetterAtPos(7, 'T');
-  delay(50);
-  writeLetterAtPos(6, 'i');
-  delay(50);
-  writeLetterAtPos(5, 'c');
-  delay(animDelay);
-
-  writeLetterAtPos(4, 't');
-  delay(50);
-  writeLetterAtPos(3, 'o');
-  delay(50);
-  writeLetterAtPos(2, 'c');
-  delay(animDelay);
-
-  // for(uint8_t i = 7; i >= 2; i--) {
-  //   ld.write(i, B10000000);
-  // }
-  // delay(animDelay);
 }
 
 void showLoadingAnim()
@@ -521,7 +400,7 @@ void showLoadingAnim()
 
 void click(int period)
 {
-  Serial.println("NEW BLOCK Click!");
+  Serial.println("Click!");
   for (int i = 0; i < CLICK_DURATION; i++)
   {
     digitalWrite(BUZZER_PIN, HIGH);
@@ -541,33 +420,33 @@ void showCurrentData(DisplayData displayData) {
     {
     case DisplayData::PriceAndHeight:
       Serial.println("PriceAndHeight");
-      writeTextCentered("USDHeight");
+      textToWrite = "USDHeight";
       delay(1000);
       // show height, then price ticker
-      printNumberCentreish(lastBlockHeight);
+      textToWrite = String(lastBlockHeight);
       delay(1000);
-      printNumberCentreish(bitcoinPrice);
+      textToWrite = String(lastBitcoinPrice);
       break;
     case DisplayData::Price:
       Serial.println("Price");
-      writeTextCentered("Price");
+      textToWrite = "Price";
       delay(1000);
-      printNumberCentreish(bitcoinPrice);
+      textToWrite = String(lastBitcoinPrice);
       break;
     case DisplayData::BlockHeight:
-      writeTextCentered("HEIGHT");
+      textToWrite = "HEIGHT";
       Serial.println("BlockHeight");
       delay(1000);
-      printNumberCentreish(lastBlockHeight);
+      textToWrite = String(lastBlockHeight);
       break;
     case DisplayData::MempoolFees:
       Serial.println("MempoolFees");
-      writeTextCentered("FEES");
+      textToWrite = "FEES";
       delay(1000);
       displayFees();
       break;
     default:
-      writeTextCentered("---");
+      textToWrite = "---";
       delay(1000);
       Serial.println("default");
       Serial.println(i);
@@ -581,24 +460,34 @@ void setup()
   Serial.begin(115200);
   Serial.println("Boot");
 
+    // set up the tasks
+  xTaskCreate(
+    writeTextTask, // Function that should be called
+    "writeTextTask", // Name of the task (for debugging)
+    10000, // Stack size (bytes)
+    NULL, // Parameter to pass
+    1, // Task priority
+    NULL // Task handle
+  );
+  // task loop
+
   ld.setBright(0);
   ld.setDigitLimit(8);
-  writeTextCentered(String(firmwareVersion));
-  click(225);
-  delay(500);
 
   pinMode(BUZZER_PIN, OUTPUT); // Set the buzzer pin as an output.
+  click(225);
+  delay(250);
 
   animateClear();
-  writeTickTock();
+  textToWrite = String(firmwareVersion);
 
   pinMode(TACTILE_SWITCH_PIN, INPUT_PULLUP);
 
   Serial.println("initing wifi");
-  writeTextCentered("INIT NET");
+  textToWrite = "INIT NET";
   initWiFi();
 
-  writeTextCentered("HAS INET");
+  textToWrite = "HAS INET";
   Serial.println("wifi connected");
 
   checkForUpdates();
