@@ -10,7 +10,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-const char* firmwareVersion = "0.0.6";  // Current firmware version
+const char* firmwareVersion = "0.0.7";  // Current firmware version
 const char* firmwareJsonUrl = "https://sx6.store/bitkoclock/firmware.json";
 
 String textToWrite = "";
@@ -184,7 +184,7 @@ String lastFees = "";
 void displayFees()
 {
   Serial.println("displayFees called");
-  String fees = String(halfHourFee) + " - " + String(hourFee) + " - " + String(fastestFee);
+  String fees = String(hourFee) + " - " + String(halfHourFee) + " - " + String(fastestFee);
   if(fees != lastFees) {
     textToWrite = fees;
     lastFees = fees;
