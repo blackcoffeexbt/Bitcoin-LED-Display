@@ -99,8 +99,6 @@ void scrollText(String text) {
     }
 
     char ch = text[nextCharPos];
-    // print current char
-    Serial.println(text[nextCharPos]);
     uint8_t seg = convertCharToSegment(ch);
 
     // If the next character is a dot, add it to the current character

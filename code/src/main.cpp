@@ -10,7 +10,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-const char* firmwareVersion = "0.0.7";  // Current firmware version
+const char* firmwareVersion = "0.0.8";  // Current firmware version
 const char* firmwareJsonUrl = "https://sx6.store/bitkoclock/firmware.json";
 
 String textToWrite = "";
@@ -30,6 +30,7 @@ enum DisplayData
   PriceAndHeight,
   Price,
   BlockHeight,
+  MoscowTime,
   MempoolFees
 };
 
@@ -146,11 +147,21 @@ void handleIncomingMessage(char *message)
     Serial.println(currentBitcoinPrice);
 
     if(
-      (displayData == DisplayData::PriceAndHeight || displayData == DisplayData::Price)
+      (
+        displayData == DisplayData::PriceAndHeight ||
+        displayData == DisplayData::Price ||
+        displayData == DisplayData::MoscowTime
+        )
       && lastBitcoinPrice != atoi(currentBitcoinPrice)
       ) {
       lastBitcoinPrice = atoi(currentBitcoinPrice);
-      textToWrite = String(lastBitcoinPrice);
+      // if moscow time, set textToWrite to sats per USD
+      if(displayData == DisplayData::MoscowTime) {
+        // calculate sats per USD using 100000000 sats = 1 BTC
+        textToWrite = String(100000000 / lastBitcoinPrice);
+      } else {
+        textToWrite = String(lastBitcoinPrice);
+      }
     }
   }
 }
@@ -164,7 +175,9 @@ void parseBlockHeight(char *payload)
   // get height
   lastBlockHeight = doc["block"]["height"];
   if (displayData == DisplayData::PriceAndHeight ||
-      displayData == DisplayData::Price)
+      displayData == DisplayData::Price ||
+      displayData == DisplayData::MoscowTime
+      )
   {
     textToWrite = String(lastBlockHeight);
 
@@ -362,7 +375,7 @@ void initWiFi()
   wifiManager.setAPCallback(configModeCallback);
   wifiManager.setConnectRetries(5);
   wifiManager.setConnectTimeout(10);
-  wifiManager.autoConnect("AutoConnectAP", "ToTheMoon1");
+  wifiManager.autoConnect("TheClock", "ToTheMoon1");
 
   Serial.println("Connected to WiFi");
 }
@@ -447,6 +460,12 @@ void showCurrentData(DisplayData displayData) {
       delay(1000);
       displayFees();
       break;
+    case DisplayData::MoscowTime:
+      Serial.println("MoscowTime");
+      textToWrite = "sats - USD";
+      delay(3000);
+      textToWrite = String(100000000 / lastBitcoinPrice);
+      break;
     default:
       textToWrite = "---";
       delay(1000);
@@ -519,7 +538,7 @@ void loop()
   {
     i++;
 
-    if (i > 3)
+    if (i > 4)
     {
       i = 0;
     }
