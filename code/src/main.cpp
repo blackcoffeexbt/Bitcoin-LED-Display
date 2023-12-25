@@ -6,11 +6,14 @@
 #include <HTTPClient.h>
 #include <WiFiManager.h>
 #include "DigitLedDisplay.h"
+#include "structs.h"
 #include "display.h"
+#include "settings.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include <SPIFFS.h>
 
-const char* firmwareVersion = "0.0.8";  // Current firmware version
+const char* firmwareVersion = "0.0.9";  // Current firmware version
 const char* firmwareJsonUrl = "https://sx6.store/bitkoclock/firmware.json";
 
 String textToWrite = "";
@@ -24,15 +27,6 @@ extern int textPos;
 #define CS 5
 #define CLK 4
 DigitLedDisplay ld = DigitLedDisplay(DIN, CS, CLK);
-
-enum DisplayData
-{
-  PriceAndHeight,
-  Price,
-  BlockHeight,
-  MoscowTime,
-  MempoolFees
-};
 
 DisplayData displayData = DisplayData::PriceAndHeight;
 
@@ -480,6 +474,14 @@ void setup()
   delay(1000);
   Serial.begin(115200);
   Serial.println("Boot");
+  
+  // init spiffs
+  if (!SPIFFS.begin())
+  {
+    Serial.println("An Error has occurred while mounting SPIFFS");
+    return;
+  }
+  loadSettings();
 
     // set up the tasks
   xTaskCreate(
@@ -501,6 +503,7 @@ void setup()
 
   animateClear();
   textToWrite = String(firmwareVersion);
+  delay(1000);
 
   pinMode(TACTILE_SWITCH_PIN, INPUT_PULLUP);
 
@@ -543,6 +546,7 @@ void loop()
       i = 0;
     }
     displayData = static_cast<DisplayData>(i);
+    saveSetting("screen_number", String(i));
     showCurrentData(displayData);
   }
 }
