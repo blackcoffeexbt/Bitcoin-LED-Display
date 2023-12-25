@@ -20,7 +20,7 @@ uint8_t convertCharToSegment(char ch) {
     case '-': return B0000001; // ABCDEFG = 0000001
 
     case 'A': return B1110111;
-    case 'a': return B1110111;
+    case 'a': return B1111101;
     case 'b': return B0011111;
     case 'B': return B01111111;
     case 'c': return B0001101;

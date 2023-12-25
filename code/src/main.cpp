@@ -116,6 +116,12 @@ void parseFirmwareJson(String json) {
 
   const char* serverVersion = doc["version"];
   String firmwareUrl = doc["firmwareUrl"];
+  // serial print server version and current version
+  Serial.println("serverVersion");
+  Serial.println(serverVersion);
+  Serial.println("current version");
+  Serial.println(firmwareVersion);
+  
 
   if (String(firmwareVersion) != serverVersion) {
     updateFirmware(firmwareUrl);
