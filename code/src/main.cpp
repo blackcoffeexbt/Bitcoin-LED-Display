@@ -12,8 +12,9 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <SPIFFS.h>
+#include <FS.h>
 
-const char* firmwareVersion = "0.0.9";  // Current firmware version
+const char* firmwareVersion = "0.1.0";  // Current firmware version
 const char* firmwareJsonUrl = "https://sx6.store/bitkoclock/firmware.json";
 
 String textToWrite = "";
@@ -456,8 +457,8 @@ void showCurrentData(DisplayData displayData) {
       break;
     case DisplayData::MoscowTime:
       Serial.println("MoscowTime");
-      textToWrite = "sats - USD";
-      delay(3000);
+      textToWrite = "Sats per USD";
+      delay(4000);
       textToWrite = String(100000000 / lastBitcoinPrice);
       break;
     default:
@@ -476,7 +477,7 @@ void setup()
   Serial.println("Boot");
   
   // init spiffs
-  if (!SPIFFS.begin())
+  if (!SPIFFS.begin(true))
   {
     Serial.println("An Error has occurred while mounting SPIFFS");
     return;
