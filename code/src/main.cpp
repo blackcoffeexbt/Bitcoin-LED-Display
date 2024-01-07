@@ -14,11 +14,13 @@
 #include <SPIFFS.h>
 #include <FS.h>
 
-const char* firmwareVersion = "0.1.0";  // Current firmware version
-const char* firmwareJsonUrl = "https://sx6.store/bitkoclock/firmware.json";
+const char *firmwareVersion = "0.1.1"; // Current firmware version
+const char *firmwareJsonUrl = "https://sx6.store/bitkoclock/firmware.json";
 
 String textToWrite = "";
 extern int textPos;
+
+const float coins = 0.1;
 
 /* Arduino Pin to Display Pin
    7 to DIN,
@@ -54,81 +56,101 @@ WebSocketsClient coinbaseWebSocket;
 WebSocketsClient mempoolWebSocket;
 
 // task for writeText
-void writeTextTask(void *pvParameters) {
-    // Cast pvParameters to the appropriate type if needed
-    // For example, if pvParameters is a String:
-    // String text = *((String*) pvParameters);
+void writeTextTask(void *pvParameters)
+{
+  // Cast pvParameters to the appropriate type if needed
+  // For example, if pvParameters is a String:
+  // String text = *((String*) pvParameters);
 
-    // Infinite loop to continuously update the display
-    for (;;) {
-        writeText(textToWrite);
-        vTaskDelay(pdMS_TO_TICKS(100)); // Delay for 100ms
-    }
+  // Infinite loop to continuously update the display
+  for (;;)
+  {
+    writeText(textToWrite);
+    vTaskDelay(pdMS_TO_TICKS(100)); // Delay for 100ms
+  }
 }
 
-void updateFirmware(String firmwareUrl) {
+void updateFirmware(String firmwareUrl)
+{
   textToWrite = "Updating...";
   HTTPClient http;
   http.begin(firmwareUrl);
   int httpCode = http.GET();
 
-  if (httpCode == 200) {
+  if (httpCode == 200)
+  {
     int contentLength = http.getSize();
     bool canBegin = Update.begin(contentLength);
 
-    if (canBegin) {
+    if (canBegin)
+    {
       WiFiClient *client = http.getStreamPtr();
       size_t written = Update.writeStream(*client);
-      
-      if (written == contentLength) {
+
+      if (written == contentLength)
+      {
         Serial.println("Written : " + String(written) + " successfully");
-      } else {
+      }
+      else
+      {
         Serial.println("Write failed. Written only : " + String(written));
       }
 
-      if (Update.end()) {
-        if (Update.isFinished()) {
+      if (Update.end())
+      {
+        if (Update.isFinished())
+        {
           textToWrite = "Update done";
           delay(2000);
           Serial.println("Update successfully completed. Rebooting...");
           textToWrite = "Rebooting";
           delay(1500);
           ESP.restart();
-        } else {
+        }
+        else
+        {
           Serial.println("Update not finished? Something went wrong!");
         }
-      } else {
+      }
+      else
+      {
         Serial.println("Error Occurred. Error #: " + String(Update.getError()));
       }
-    } else {
+    }
+    else
+    {
       Serial.println("Not enough space to begin OTA");
     }
-  } else {
+  }
+  else
+  {
     Serial.println("Failed to fetch firmware");
   }
 
   http.end();
 }
 
-void parseFirmwareJson(String json) {
+void parseFirmwareJson(String json)
+{
   DynamicJsonDocument doc(1024);
   deserializeJson(doc, json);
 
-  const char* serverVersion = doc["version"];
+  const char *serverVersion = doc["version"];
   String firmwareUrl = doc["firmwareUrl"];
   // serial print server version and current version
   Serial.println("serverVersion");
   Serial.println(serverVersion);
   Serial.println("current version");
   Serial.println(firmwareVersion);
-  
 
-  if (String(firmwareVersion) != serverVersion) {
+  if (String(firmwareVersion) != serverVersion)
+  {
     updateFirmware(firmwareUrl);
   }
 }
 
-void checkForUpdates() {
+void checkForUpdates()
+{
   String payload = getEndpointData(firmwareJsonUrl);
   Serial.println("firmware");
   Serial.println(payload);
@@ -147,20 +169,28 @@ void handleIncomingMessage(char *message)
     Serial.print("BTC-USD Price: ");
     Serial.println(currentBitcoinPrice);
 
-    if(
-      (
-        displayData == DisplayData::PriceAndHeight ||
-        displayData == DisplayData::Price ||
-        displayData == DisplayData::MoscowTime
-        )
-      && lastBitcoinPrice != atoi(currentBitcoinPrice)
-      ) {
+    if (
+        (
+            displayData == DisplayData::PriceAndHeight ||
+            displayData == DisplayData::Price ||
+            displayData == DisplayData::MoscowTime ||
+            displayData == DisplayData::All) &&
+        lastBitcoinPrice != atoi(currentBitcoinPrice))
+    {
       lastBitcoinPrice = atoi(currentBitcoinPrice);
       // if moscow time, set textToWrite to sats per USD
-      if(displayData == DisplayData::MoscowTime) {
+      if (displayData == DisplayData::MoscowTime)
+      {
         // calculate sats per USD using 100000000 sats = 1 BTC
         textToWrite = String(100000000 / lastBitcoinPrice);
-      } else {
+      }
+      else if (displayData == DisplayData::All)
+      {
+        uint32_t total = lastBitcoinPrice * coins;
+        textToWrite = String(total);
+      }
+      else
+      {
         textToWrite = String(lastBitcoinPrice);
       }
     }
@@ -177,12 +207,12 @@ void parseBlockHeight(char *payload)
   lastBlockHeight = doc["block"]["height"];
   if (displayData == DisplayData::PriceAndHeight ||
       displayData == DisplayData::Price ||
-      displayData == DisplayData::MoscowTime
-      )
+      displayData == DisplayData::MoscowTime)
   {
     textToWrite = String(lastBlockHeight);
 
-    if(displayData == DisplayData::PriceAndHeight) {
+    if (displayData == DisplayData::PriceAndHeight)
+    {
       delay(5000);
     }
   }
@@ -199,7 +229,8 @@ void displayFees()
 {
   Serial.println("displayFees called");
   String fees = String(hourFee) + " - " + String(halfHourFee) + " - " + String(fastestFee);
-  if(fees != lastFees) {
+  if (fees != lastFees)
+  {
     textToWrite = fees;
     lastFees = fees;
   }
@@ -216,7 +247,7 @@ void parseFees(char *payload)
   economyFee = doc["fees"]["economyFee"];
   minimumFee = doc["fees"]["minimumFee"];
   Serial.println("Fees: Fastest: " + String(fastestFee) + " Half Hour: " + String(halfHourFee) + " Hour: " + String(hourFee) + " Economy: " + String(economyFee) + " Minimum: " + String(minimumFee));
-  
+
   // display fees
   if (displayData == DisplayData::MempoolFees)
   {
@@ -428,60 +459,70 @@ void click(int period)
 
 /**
  * @brief Display the current data name and then the data
- * 
- * @param displayData 
+ *
+ * @param displayData
  */
-void showCurrentData(DisplayData displayData) {
+void showCurrentData(DisplayData displayData)
+{
   switch (displayData)
-    {
-    case DisplayData::PriceAndHeight:
-      Serial.println("PriceAndHeight");
-      textToWrite = "Price - Height";
-      delay(3500);
-      // show height, then price ticker
-      textToWrite = String(lastBlockHeight);
-      delay(2000);
-      textToWrite = String(lastBitcoinPrice);
-      break;
-    case DisplayData::Price:
-      Serial.println("Price");
-      textToWrite = "Price";
-      delay(1000);
-      textToWrite = String(lastBitcoinPrice);
-      break;
-    case DisplayData::BlockHeight:
-      textToWrite = "Height";
-      Serial.println("BlockHeight");
-      delay(1000);
-      textToWrite = String(lastBlockHeight);
-      break;
-    case DisplayData::MempoolFees:
-      Serial.println("MempoolFees");
-      textToWrite = "FEES";
-      delay(1000);
-      displayFees();
-      break;
-    case DisplayData::MoscowTime:
-      Serial.println("MoscowTime");
-      textToWrite = "Sats per USD";
-      delay(4000);
-      textToWrite = String(100000000 / lastBitcoinPrice);
-      break;
-    default:
-      textToWrite = "---";
-      delay(1000);
-      Serial.println("default");
-      Serial.println(i);
-      break;
-    }
+  {
+  case DisplayData::PriceAndHeight:
+    Serial.println("PriceAndHeight");
+    textToWrite = "Price - Height";
+    delay(3500);
+    // show height, then price ticker
+    textToWrite = String(lastBlockHeight);
+    delay(2000);
+    textToWrite = String(lastBitcoinPrice);
+    break;
+  case DisplayData::Price:
+    Serial.println("Price");
+    textToWrite = "Price";
+    delay(1000);
+    textToWrite = String(lastBitcoinPrice);
+    break;
+  case DisplayData::BlockHeight:
+    textToWrite = "Height";
+    Serial.println("BlockHeight");
+    delay(1000);
+    textToWrite = String(lastBlockHeight);
+    break;
+  case DisplayData::MempoolFees:
+    Serial.println("MempoolFees");
+    textToWrite = "FEES";
+    delay(1000);
+    displayFees();
+    break;
+  case DisplayData::MoscowTime:
+    Serial.println("MoscowTime");
+    textToWrite = "Sats per USD";
+    delay(4000);
+    textToWrite = String(100000000 / lastBitcoinPrice);
+    break;
+  case DisplayData::All:
+  {
+    Serial.println("All");
+    textToWrite = "All";
+    delay(1000);
+    uint32_t total = lastBitcoinPrice * coins;
+    textToWrite = String(total);
+    break;
   }
+  default:
+    textToWrite = "---";
+    delay(1000);
+    Serial.println("default");
+    Serial.println(i);
+    break;
+  }
+}
 
 void setup()
 {
   delay(1000);
   Serial.begin(115200);
   Serial.println("Boot");
-  
+
   // init spiffs
   if (!SPIFFS.begin(true))
   {
@@ -490,14 +531,14 @@ void setup()
   }
   loadSettings();
 
-    // set up the tasks
+  // set up the tasks
   xTaskCreate(
-    writeTextTask, // Function that should be called
-    "writeTextTask", // Name of the task (for debugging)
-    10000, // Stack size (bytes)
-    NULL, // Parameter to pass
-    1, // Task priority
-    NULL // Task handle
+      writeTextTask,   // Function that should be called
+      "writeTextTask", // Name of the task (for debugging)
+      10000,           // Stack size (bytes)
+      NULL,            // Parameter to pass
+      1,               // Task priority
+      NULL             // Task handle
   );
   // task loop
 
@@ -548,7 +589,7 @@ void loop()
   {
     i++;
 
-    if (i > 4)
+    if (i > 5)
     {
       i = 0;
     }

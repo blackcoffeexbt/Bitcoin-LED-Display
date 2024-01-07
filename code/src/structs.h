@@ -6,5 +6,6 @@ enum DisplayData
   Price,
   BlockHeight,
   MoscowTime,
-  MempoolFees
+  MempoolFees,
+  All,
 };
