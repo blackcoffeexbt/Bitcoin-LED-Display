@@ -14,13 +14,14 @@
 #include <SPIFFS.h>
 #include <FS.h>
 
-const char *firmwareVersion = "0.1.1"; // Current firmware version
+const float coins = 1;
+const String currency = "USD";
+const char *firmwareVersion = "0.1.10"; // Current firmware version
 const char *firmwareJsonUrl = "https://sx6.store/bitkoclock/firmware.json";
 
 String textToWrite = "";
 extern int textPos;
 
-const float coins = 0.1;
 
 /* Arduino Pin to Display Pin
    7 to DIN,
@@ -166,7 +167,7 @@ void handleIncomingMessage(char *message)
   if (strcmp(type, "ticker") == 0)
   {
     const char *currentBitcoinPrice = doc["price"];
-    Serial.print("BTC-USD Price: ");
+    Serial.print("BTC-" + currency + " price: ");
     Serial.println(currentBitcoinPrice);
 
     if (
@@ -178,10 +179,10 @@ void handleIncomingMessage(char *message)
         lastBitcoinPrice != atoi(currentBitcoinPrice))
     {
       lastBitcoinPrice = atoi(currentBitcoinPrice);
-      // if moscow time, set textToWrite to sats per USD
+      // if moscow time, set textToWrite to sats per currency
       if (displayData == DisplayData::MoscowTime)
       {
-        // calculate sats per USD using 100000000 sats = 1 BTC
+        // calculate sats per currency using 100000000 sats = 1 BTC
         textToWrite = String(100000000 / lastBitcoinPrice);
       }
       else if (displayData == DisplayData::All)
@@ -308,7 +309,7 @@ void coinbaseWebSocketEvent(WStype_t type, uint8_t *payload, size_t length)
   {
     Serial.printf("[WSc] Connected to url: %s\n", payload);
     // Send message to subscribe to ticker
-    coinbaseWebSocket.sendTXT("{\"type\": \"subscribe\", \"product_ids\": [\"BTC-USD\"], \"channels\": [\"level2\", \"heartbeat\", {\"name\": \"ticker\", \"product_ids\": [\"BTC-USD\"]}]}");
+    coinbaseWebSocket.sendTXT("{\"type\": \"subscribe\", \"product_ids\": [\"BTC-" + currency + "\"], \"channels\": [\"level2\", \"heartbeat\", {\"name\": \"ticker\", \"product_ids\": [\"BTC-" + currency + "\"]}]}");
   }
   break;
   case WStype_TEXT:
@@ -348,7 +349,7 @@ void animateClear()
 void getBitcoinPrice()
 {
   // Get block height
-  const String line = getEndpointData("https://api.coinbase.com/v2/prices/BTC-USD/buy");
+  const String line = getEndpointData("https://api.coinbase.com/v2/prices/BTC-" + currency + "/buy");
   // data will look like this, get the amount value {"data":{"amount":"26602.105","base":"BTC","currency":"USD"}} using ArduinoJson
   DynamicJsonDocument doc(1024);
   deserializeJson(doc, line);
@@ -402,10 +403,11 @@ void configModeCallback(WiFiManager *myWiFiManager)
 
 void initWiFi()
 {
-  // WiFiManager for auto-connecting to Wi-Fi
   WiFiManager wifiManager;
   wifiManager.setAPCallback(configModeCallback);
   wifiManager.setConnectRetries(5);
+  wifiManager.setTimeout(120);
+  wifiManager.setConfigPortalTimeout(120);
   wifiManager.setConnectTimeout(10);
   wifiManager.autoConnect("TheClock", "ToTheMoon1");
 
@@ -495,7 +497,7 @@ void showCurrentData(DisplayData displayData)
     break;
   case DisplayData::MoscowTime:
     Serial.println("MoscowTime");
-    textToWrite = "Sats per USD";
+    textToWrite = "Sats per " + currency;
     delay(4000);
     textToWrite = String(100000000 / lastBitcoinPrice);
     break;
@@ -542,7 +544,7 @@ void setup()
   );
   // task loop
 
-  ld.setBright(0);
+  ld.setBright(2);
   ld.setDigitLimit(8);
 
   pinMode(BUZZER_PIN, OUTPUT); // Set the buzzer pin as an output.
