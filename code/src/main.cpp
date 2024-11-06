@@ -23,13 +23,12 @@ String textToWrite = "";
 extern int textPos;
 
 
-/* Arduino Pin to Display Pin
-   7 to DIN,
-   6 to CS,
-   5 to CLK */
 #define DIN 2
+// # define DIN 2
 #define CS 5
 #define CLK 4
+
+// Initialize display with the specified pins
 DigitLedDisplay ld = DigitLedDisplay(DIN, CS, CLK);
 
 DisplayData displayData = DisplayData::PriceAndHeight;
@@ -544,7 +543,7 @@ void setup()
   );
   // task loop
 
-  ld.setBright(2);
+  ld.setBright(2); // dont set below 2. 1 is off
   ld.setDigitLimit(8);
 
   pinMode(BUZZER_PIN, OUTPUT); // Set the buzzer pin as an output.
