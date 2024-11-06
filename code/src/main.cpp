@@ -23,7 +23,7 @@ String textToWrite = "";
 extern int textPos;
 
 
-#define DIN 2
+#define DIN 23
 // # define DIN 2
 #define CS 5
 #define CLK 4
@@ -543,8 +543,11 @@ void setup()
   );
   // task loop
 
-  ld.setBright(2); // dont set below 2. 1 is off
-  ld.setDigitLimit(8);
+  // delay here to allow LED to initialize
+  delay(1000);
+  ld.setBright(50);      // Set brightness (0-100)
+  ld.setDigitLimit(8);   // Set number of digits (8 for an 8-digit display)
+  ld.clear();            // Clear display at start
 
   pinMode(BUZZER_PIN, OUTPUT); // Set the buzzer pin as an output.
   click(225);
